@@ -8,12 +8,12 @@ public class ServerApp {
   public static void main(String[] args) {
 
     try (ServerSocket serverSocket = new ServerSocket(4444)) {
-      MyLogger.logger.log(Level.INFO,"Server is listening on port 4444");
-
-      Socket socket = serverSocket.accept();
-      MyLogger.logger.log(Level.INFO,"New client connected");
-      new Board(socket);
-
+      MyLogger.logger.log(Level.INFO, "Server is listening on port 4444");
+      while (true) {
+        Socket socket = serverSocket.accept();
+        MyLogger.logger.log(Level.INFO, "New client connected");
+        new Connection(socket);
+      }
     } catch (IOException ex) {
       System.out.println("Server exception: " + ex.getMessage());
       ex.printStackTrace();
