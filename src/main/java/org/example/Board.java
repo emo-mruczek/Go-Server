@@ -79,7 +79,7 @@ public class Board {
   private void makeMove(int row, int col, int color) {
     if (gameBoard[row][col] != 0) {
       // Pole jest już zajęte
-      sendMessage("INSERT FALSE");
+      MessageController.sendMessage("INSERT FALSE", socket);
       MyLogger.logger.log(Level.INFO, "INSERT FALSE: Field is already occupied");
       return;
     }
@@ -94,11 +94,11 @@ public class Board {
     if (isCapturingMove(row, col, color, tempBoard)) {
       // Zbicje kamienia przeciwnika - ruch jest legalny
       gameBoard[row][col] = color;
-      sendMessage("INSERT TRUE");
+      MessageController.sendMessage("INSERT TRUE", socket);
       MyLogger.logger.log(Level.INFO, "INSERT TRUE: Stone captured opponent's stone");
 
       // Wysyłamy informację do klienta o przejętym kamieniu
-      sendMessage("DELETE " + convertPosition(row) + convertPosition(col));
+      MessageController.sendMessage("DELETE " + convertPosition(row) + convertPosition(col), socket);
 
       // Zwiększ liczbę przejętych kamieni dla odpowiedniego koloru
       if (color == 1) {
@@ -112,12 +112,12 @@ public class Board {
       // Sprawdź czy ruch nie jest samobójczy
       if (isSuicidalMove(row, col, color, tempBoard)) {
         // Ruch jest samobójczy
-        sendMessage("INSERT FALSE");
+        MessageController.sendMessage("INSERT FALSE", socket);
         MyLogger.logger.log(Level.INFO, "INSERT FALSE: Suicidal move");
       } else {
         // Ruch jest dozwolony
         gameBoard[row][col] = color;
-        sendMessage("INSERT TRUE");
+        MessageController.sendMessage("INSERT TRUE", socket);
         MyLogger.logger.log(Level.INFO, "INSERT TRUE");
 
         // Zwiększ liczbę kamieni dla odpowiedniego koloru
@@ -243,17 +243,6 @@ public class Board {
 
   private int getColor(char colorChar) {
     return Character.getNumericValue(colorChar);
-  }
-
-  private void sendMessage(String message) {
-    try {
-      PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-      out.println(message);
-    } catch (UnknownHostException e) {
-      System.out.println("Server not found: " + e.getMessage());
-    } catch (IOException e) {
-      System.out.println("I/O error: " + e.getMessage());
-    }
   }
 
   private String convertPosition(int pos) {
