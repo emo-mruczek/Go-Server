@@ -80,7 +80,7 @@ public class Board {
     if (gameBoard[row][col] != 0) {
       // Pole jest już zajęte
       MessageController.sendMessage("INSERT FALSE", socket);
-      MyLogger.logger.log(Level.INFO, "INSERT FALSE: Field is already occupied");
+      MyLogger.logger.log(Level.INFO, "Field is already occupied: " + row + col);
       return;
     }
 
@@ -95,10 +95,12 @@ public class Board {
       // Zbicje kamienia przeciwnika - ruch jest legalny
       gameBoard[row][col] = color;
       MessageController.sendMessage("INSERT TRUE", socket);
-      MyLogger.logger.log(Level.INFO, "INSERT TRUE: Stone captured opponent's stone");
+      MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
 
       // Wysyłamy informację do klienta o przejętym kamieniu
-      MessageController.sendMessage("DELETE " + convertPosition(row) + convertPosition(col), socket);
+      MessageController.sendMessage("DELETE " + convertPosition(row) + convertPosition(col), socket); //TODO: czy nie powinno byc tutaj rekurencji?? (zeby zbijac całą grupę)
+      //TODO: moze jakas metoda do tego co by sie rekurencyjnie wywoływała
+      //TODO: also to wysyla row/col kamienia postawionego, nie zbijanego (nie ustalamy w sumie w ogole tutaj/nie zwracamy zbijanego)
 
       // Zwiększ liczbę przejętych kamieni dla odpowiedniego koloru
       if (color == 1) {
@@ -113,12 +115,12 @@ public class Board {
       if (isSuicidalMove(row, col, color, tempBoard)) {
         // Ruch jest samobójczy
         MessageController.sendMessage("INSERT FALSE", socket);
-        MyLogger.logger.log(Level.INFO, "INSERT FALSE: Suicidal move");
+        MyLogger.logger.log(Level.INFO, "Suicidal move: " + row + col);
       } else {
         // Ruch jest dozwolony
         gameBoard[row][col] = color;
         MessageController.sendMessage("INSERT TRUE", socket);
-        MyLogger.logger.log(Level.INFO, "INSERT TRUE");
+        MyLogger.logger.log(Level.INFO, "Inserion ok: " + row + col);
 
         // Zwiększ liczbę kamieni dla odpowiedniego koloru
         if (color == 1) {
@@ -160,7 +162,7 @@ public class Board {
 
     visited[row][col] = true;
 
-    int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};  //TODO: czy to są wartosci dla sasiada? czy po prostu wstawia ujemne bo w sumie nie wiem (nie rozumiem tablic xd)
     boolean surrounded = true;
 
     for (int[] neighbor : neighbors) {
@@ -183,7 +185,7 @@ public class Board {
     // Sprawdź, czy ruch powoduje zbicie przynajmniej jednej grupy kamieni przeciwnika
 
     // Sprawdź otoczenie kamienia
-    int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};  //TODO: is it ok???? czy nie powinno byc cos w stylu col - 1, row - 1 itd (czyli w sumie tak jak mowilem up, nie znam sie)
 
     for (int[] neighbor : neighbors) {
       int newRow = row + neighbor[0];
@@ -212,7 +214,7 @@ public class Board {
     return isGroupSurrounded(row, col, color, tempBoard);
   }
 
-  private boolean isMoveAllowed(int row, int col, int color) {
+  private boolean isMoveAllowed(int row, int col, int color) {  //TODO: stara metoda? czy mozna wywalic ja?
     if (gameBoard[row][col] != 0) {
       return false; // Pole jest już zajęte
     }
@@ -245,7 +247,7 @@ public class Board {
     return Character.getNumericValue(colorChar);
   }
 
-  private String convertPosition(int pos) {
+  private String convertPosition(int pos) { //TODO: jakby bylo cos nie tak to mozna stawic identyczna metode z clienta, ale nie sprawdzalem czy jest git
     if (pos < 10) {
       return String.valueOf(pos);
     } else {
