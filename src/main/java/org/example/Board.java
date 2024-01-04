@@ -19,7 +19,7 @@ public class Board {
   private int blackCaptures;  // Liczba przejętych kamieni przez czarnego gracza
   private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
 
-  public Board(int size, Socket socket, BufferedReader in) {
+  public Board(int size, boolean mode, Socket socket, BufferedReader in) {
     this.size = size;
     this.socket = socket;
     this.in = in;
@@ -29,6 +29,11 @@ public class Board {
     this.whiteStones = 0;
     this.blackCaptures = 0;
     this.whiteCaptures = 0;
+
+    if (mode) {
+      initializeComputer();
+    }
+
   }
 
   private void initializeBoard() {
@@ -253,5 +258,10 @@ public class Board {
     } else {
       return String.valueOf((char) ('A' + pos - 10));
     }
+  }
+
+  //TODO: this
+  private void initializeComputer() {
+    System.out.println("Dont be sad :(((((");
   }
 }
