@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.logging.Level;
 
 public class Board {
   private final int size;
@@ -71,9 +72,11 @@ public class Board {
       // Dodaj kamień do planszy tylko jeżeli ruch jest dozwolony
       gameBoard[row][col] = color;
       sendMessage("INSERT TRUE");
+      MyLogger.logger.log(Level.INFO, "INSERT TRUE");
     } else {
       // Jeżeli ruch nie jest dozwolony, wyslij informację o niepowodzeniu
       sendMessage("INSERT FALSE");
+      MyLogger.logger.log(Level.INFO, "INSERT FALSE");
     }
   }
 
