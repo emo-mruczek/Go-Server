@@ -15,6 +15,6 @@ public class MyLogger {
     ch.setLevel(Level.INFO);
     logger.addHandler(ch);
 
-    logger.setLevel(Level.OFF);
+    logger.setLevel(Level.ALL);
   }
 }

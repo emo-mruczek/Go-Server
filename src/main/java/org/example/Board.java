@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 public class Board {
   private final int size;
@@ -12,6 +13,7 @@ public class Board {
   private final BufferedReader in;
   private PrintWriter out;
   private int gameBoard[][];
+
   public Board(int size, Socket socket, BufferedReader in) {
     this.size = size;
     this.socket = socket;
@@ -27,8 +29,8 @@ public class Board {
       }
     }
   }
-  public void clientHandler() {
 
+  public void clientHandler() {
     try {
       OutputStream output = socket.getOutputStream();
       out = new PrintWriter(output, true);
@@ -43,7 +45,6 @@ public class Board {
     }
   }
 
-  //TODO: what commands do we need?
   private void whatCommand(String command) throws IOException {
     String[] part = command.split("\\s+");
     String name = part[0];
@@ -60,14 +61,30 @@ public class Board {
       case "BYE" -> socket.close();
     }
   }
+
   private void insertStone(String value) {
     int row = getRow(value.charAt(0));
     int col = getCol(value.charAt(1));
     int color = getColor(value.charAt(2));
 
-    // Dodaj kamień do planszy
-    gameBoard[row][col] = color;
+    if (isMoveAllowed(row, col, color)) {
+      // Dodaj kamień do planszy tylko jeżeli ruch jest dozwolony
+      gameBoard[row][col] = color;
+      sendMessage("INSERT TRUE");
+    } else {
+      // Jeżeli ruch nie jest dozwolony, wyslij informację o niepowodzeniu
+      sendMessage("INSERT FALSE");
+    }
   }
+
+  private boolean isMoveAllowed(int row, int col, int color) {
+    // Tutaj implementuj logikę sprawdzającą, czy ruch jest dozwolony
+    // Możesz użyć warunków, sprawdzić istniejące kamienie, itp.
+    // W przypadku, gdy ruch nie jest dozwolony, zwróć false
+    // W przeciwnym razie zwróć true
+    return true; // tymczasowy przykład
+  }
+
   private int getRow(char rowChar) {
     if (rowChar >= '0' && rowChar <= '9') {
       return rowChar - '0';
@@ -86,5 +103,16 @@ public class Board {
 
   private int getColor(char colorChar) {
     return Character.getNumericValue(colorChar);
+  }
+
+  private void sendMessage(String message) {
+    try {
+      PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+      out.println(message);
+    } catch (UnknownHostException e) {
+      System.out.println("Server not found: " + e.getMessage());
+    } catch (IOException e) {
+      System.out.println("I/O error: " + e.getMessage());
+    }
   }
 }
