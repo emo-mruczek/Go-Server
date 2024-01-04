@@ -14,6 +14,10 @@ public class Board {
   private final BufferedReader in;
   private PrintWriter out;
   private int gameBoard[][];
+  private int blackStones;  // Liczba czarnych kamieni na planszy
+  private int whiteStones;  // Liczba białych kamieni na planszy
+  private int blackCaptures;  // Liczba przejętych kamieni przez czarnego gracza
+  private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
 
   public Board(int size, Socket socket, BufferedReader in) {
     this.size = size;
@@ -21,6 +25,10 @@ public class Board {
     this.in = in;
     this.gameBoard = new int[size][size];
     initializeBoard();
+    this.blackStones = 0;
+    this.whiteStones = 0;
+    this.blackCaptures = 0;
+    this.whiteCaptures = 0;
   }
 
   private void initializeBoard() {
@@ -65,15 +73,60 @@ public class Board {
     int col = getCol(value.charAt(1));
     int color = getColor(value.charAt(2));
 
-    if (isMoveAllowed(row, col, color)) {
-      // Dodaj kamień do planszy tylko jeżeli ruch jest dozwolony
+    makeMove(row, col, color);
+  }
+
+  private void makeMove(int row, int col, int color) {
+    if (gameBoard[row][col] != 0) {
+      // Pole jest już zajęte
+      sendMessage("INSERT FALSE");
+      MyLogger.logger.log(Level.INFO, "INSERT FALSE: Field is already occupied");
+      return;
+    }
+
+    // Tworzymy kopię planszy, aby nie modyfikować oryginalnej planszy podczas sprawdzania
+    int[][] tempBoard = copyBoard(gameBoard);
+
+    // Postawienie tymczasowego kamienia na planszy
+    tempBoard[row][col] = color;
+
+    // Sprawdź, czy tymczasowy kamień powoduje zbicie grupy kamieni przeciwnika
+    if (isCapturingMove(row, col, color, tempBoard)) {
+      // Zbicje kamienia przeciwnika - ruch jest legalny
       gameBoard[row][col] = color;
       sendMessage("INSERT TRUE");
-      MyLogger.logger.log(Level.INFO, "INSERT TRUE");
+      MyLogger.logger.log(Level.INFO, "INSERT TRUE: Stone captured opponent's stone");
+
+      // Wysyłamy informację do klienta o przejętym kamieniu
+      sendMessage("DELETE " + convertPosition(row) + convertPosition(col));
+
+      // Zwiększ liczbę przejętych kamieni dla odpowiedniego koloru
+      if (color == 1) {
+        blackCaptures++;
+        whiteStones--;  // Zmniejsz liczbę białych kamieni na planszy
+      } else if (color == 2) {
+        whiteCaptures++;
+        blackStones--;  // Zmniejsz liczbę czarnych kamieni na planszy
+      }
     } else {
-      // Jeżeli ruch nie jest dozwolony, wyslij informację o niepowodzeniu
-      sendMessage("INSERT FALSE");
-      MyLogger.logger.log(Level.INFO, "INSERT FALSE");
+      // Sprawdź czy ruch nie jest samobójczy
+      if (isSuicidalMove(row, col, color, tempBoard)) {
+        // Ruch jest samobójczy
+        sendMessage("INSERT FALSE");
+        MyLogger.logger.log(Level.INFO, "INSERT FALSE: Suicidal move");
+      } else {
+        // Ruch jest dozwolony
+        gameBoard[row][col] = color;
+        sendMessage("INSERT TRUE");
+        MyLogger.logger.log(Level.INFO, "INSERT TRUE");
+
+        // Zwiększ liczbę kamieni dla odpowiedniego koloru
+        if (color == 1) {
+          blackStones++;
+        } else if (color == 2) {
+          whiteStones++;
+        }
+      }
     }
   }
 
@@ -145,34 +198,18 @@ public class Board {
     return false;
   }
 
-  private boolean isSuicidalMove(int row, int col, int color) {
+  private boolean isSuicidalMove(int row, int col, int color, int[][] board) {
     // Sprawdź, czy ruch jest samobójczy, tj. czy postawienie kamienia spowoduje,
-    // że wszystkie kamienie gracza zostaną zbite
+    // że grupa kamieni gracza zostanie otoczona
 
     // Tworzymy kopię planszy, aby nie modyfikować oryginalnej planszy podczas sprawdzania
-    int[][] tempBoard = copyBoard(gameBoard);
+    int[][] tempBoard = copyBoard(board);
 
     // Postawienie tymczasowego kamienia na planszy
     tempBoard[row][col] = color;
 
-    // Sprawdź, czy tymczasowy kamień powoduje zbicie grupy kamieni przeciwnika
-    if (isCapturingMove(row, col, color, tempBoard)) {
-      // Jeśli tak, to ruch jest samobójczy
-      return true;
-    }
-
-    // Jeśli nie, sprawdź, czy postawienie tymczasowego kamienia powoduje, że inna grupa kamieni gracza zostanie otoczona
-    for (int i = 0; i < tempBoard.length; i++) {
-      for (int j = 0; j < tempBoard[i].length; j++) {
-        if (tempBoard[i][j] == color && isGroupSurrounded(i, j, color, tempBoard)) {
-          // Jeśli inna grupa kamieni gracza zostanie otoczona, to ruch jest samobójczy
-          return true;
-        }
-      }
-    }
-
-    // Jeśli nie spełniono żadnej z powyższych sytuacji, ruch nie jest samobójczy
-    return false;
+    // Jeśli grupa kamieni gracza zostanie otoczona, to ruch jest samobójczy
+    return isGroupSurrounded(row, col, color, tempBoard);
   }
 
   private boolean isMoveAllowed(int row, int col, int color) {
@@ -181,7 +218,7 @@ public class Board {
     }
 
     // Sprawdź czy ruch nie jest samobójczy
-    if (isSuicidalMove(row, col, color)) {
+    if (isSuicidalMove(row, col, color, gameBoard)) {
       return false; // Ruch jest samobójczy
     }
 
@@ -216,6 +253,14 @@ public class Board {
       System.out.println("Server not found: " + e.getMessage());
     } catch (IOException e) {
       System.out.println("I/O error: " + e.getMessage());
+    }
+  }
+
+  private String convertPosition(int pos) {
+    if (pos < 10) {
+      return String.valueOf(pos);
+    } else {
+      return String.valueOf((char) ('A' + pos - 10));
     }
   }
 }
