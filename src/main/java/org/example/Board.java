@@ -56,9 +56,6 @@ public class Board {
 
     switch (name) {
       case "INSERT" -> insertStone(value);
-      //case "DRAW" -> drawClicked();
-      //case "DELETE" -> deleteClicked(value);
-      //case "SEARCH" -> searchClicked(value);
       case "BYE" -> socket.close();
     }
   }
@@ -80,12 +77,115 @@ public class Board {
     }
   }
 
+  private boolean isValidPosition(int row, int col, int[][] board) {
+    // Sprawdź, czy pozycja (row, col) mieści się w zakresie planszy
+    return row >= 0 && row < board.length && col >= 0 && col < board[0].length;
+  }
+
+  private int[][] copyBoard(int[][] original) {
+    // Stwórz kopię planszy
+    int[][] copy = new int[original.length][original[0].length];
+    for (int i = 0; i < original.length; i++) {
+      System.arraycopy(original[i], 0, copy[i], 0, original[i].length);
+    }
+    return copy;
+  }
+
+  private boolean isGroupSurroundedDFS(int row, int col, int color, int[][] board, boolean[][] visited) {
+    // Wersja DFS sprawdzająca, czy grupa kamieni o danym kolorze jest otoczona
+    if (!isValidPosition(row, col, board) || visited[row][col]) {
+      return true; // Jeśli pozycja nie jest ważna lub została już odwiedzona, zwróć true (oznacza otoczenie)
+    }
+
+    if (board[row][col] == 0) {
+      return false; // Jeśli na danej pozycji nie ma kamienia, to grupa nie jest otoczona
+    }
+
+    if (board[row][col] != color) {
+      return true; // Jeśli kamień ma inny kolor, zwróć true (oznacza otoczenie)
+    }
+
+    visited[row][col] = true;
+
+    int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    boolean surrounded = true;
+
+    for (int[] neighbor : neighbors) {
+      int newRow = row + neighbor[0];
+      int newCol = col + neighbor[1];
+
+      surrounded = surrounded && isGroupSurroundedDFS(newRow, newCol, color, board, visited);
+    }
+
+    return surrounded;
+  }
+
+  private boolean isGroupSurrounded(int row, int col, int color, int[][] board) {
+    // Sprawdź, czy grupa kamieni o danym kolorze jest otoczona
+    boolean[][] visited = new boolean[board.length][board[0].length];
+    return isGroupSurroundedDFS(row, col, color, board, visited);
+  }
+
+  private boolean isCapturingMove(int row, int col, int color, int[][] board) {
+    // Sprawdź, czy ruch powoduje zbicie przynajmniej jednej grupy kamieni przeciwnika
+
+    // Sprawdź otoczenie kamienia
+    int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+
+    for (int[] neighbor : neighbors) {
+      int newRow = row + neighbor[0];
+      int newCol = col + neighbor[1];
+
+      if (isValidPosition(newRow, newCol, board) && board[newRow][newCol] != color && isGroupSurrounded(newRow, newCol, 3 - color, board)) {
+        // Znaleziono grupę przeciwnika, którą można zbić
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private boolean isSuicidalMove(int row, int col, int color) {
+    // Sprawdź, czy ruch jest samobójczy, tj. czy postawienie kamienia spowoduje,
+    // że wszystkie kamienie gracza zostaną zbite
+
+    // Tworzymy kopię planszy, aby nie modyfikować oryginalnej planszy podczas sprawdzania
+    int[][] tempBoard = copyBoard(gameBoard);
+
+    // Postawienie tymczasowego kamienia na planszy
+    tempBoard[row][col] = color;
+
+    // Sprawdź, czy tymczasowy kamień powoduje zbicie grupy kamieni przeciwnika
+    if (isCapturingMove(row, col, color, tempBoard)) {
+      // Jeśli tak, to ruch jest samobójczy
+      return true;
+    }
+
+    // Jeśli nie, sprawdź, czy postawienie tymczasowego kamienia powoduje, że inna grupa kamieni gracza zostanie otoczona
+    for (int i = 0; i < tempBoard.length; i++) {
+      for (int j = 0; j < tempBoard[i].length; j++) {
+        if (tempBoard[i][j] == color && isGroupSurrounded(i, j, color, tempBoard)) {
+          // Jeśli inna grupa kamieni gracza zostanie otoczona, to ruch jest samobójczy
+          return true;
+        }
+      }
+    }
+
+    // Jeśli nie spełniono żadnej z powyższych sytuacji, ruch nie jest samobójczy
+    return false;
+  }
+
   private boolean isMoveAllowed(int row, int col, int color) {
-    // Tutaj implementuj logikę sprawdzającą, czy ruch jest dozwolony
-    // Możesz użyć warunków, sprawdzić istniejące kamienie, itp.
-    // W przypadku, gdy ruch nie jest dozwolony, zwróć false
-    // W przeciwnym razie zwróć true
-    return true; // tymczasowy przykład
+    if (gameBoard[row][col] != 0) {
+      return false; // Pole jest już zajęte
+    }
+
+    // Sprawdź czy ruch nie jest samobójczy
+    if (isSuicidalMove(row, col, color)) {
+      return false; // Ruch jest samobójczy
+    }
+
+    return true; // Ruch jest dozwolony
   }
 
   private int getRow(char rowChar) {
