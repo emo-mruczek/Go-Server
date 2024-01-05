@@ -5,23 +5,39 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
-<<<<<<< Updated upstream
-=======
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
->>>>>>> Stashed changes
 
 public class Board {
   private final int size;
   private final Socket socket;
   private final BufferedReader in;
   private PrintWriter out;
+  private int gameBoard[][];
+  private int blackStones;  // Liczba czarnych kamieni na planszy
+  private int whiteStones;  // Liczba białych kamieni na planszy
+  private int blackCaptures;  // Liczba przejętych kamieni przez czarnego gracza
+  private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
 
   public Board(int size, Socket socket, BufferedReader in) {
     this.size = size;
     this.socket = socket;
     this.in = in;
+    this.gameBoard = new int[size][size];
+    initializeBoard();
+    this.blackStones = 0;
+    this.whiteStones = 0;
+    this.blackCaptures = 0;
+    this.whiteCaptures = 0;
+  }
+
+  private void initializeBoard() {
+    for (int i = 0; i < size; i++) {
+      for (int j = 0; j < size; j++) {
+        gameBoard[i][j] = 0; // Wypełnienie tablicy zerami
+      }
+    }
   }
 
   public void clientHandler() {
@@ -39,7 +55,6 @@ public class Board {
     }
   }
 
-  //TODO: what commands do we need?
   private void whatCommand(String command) throws IOException {
     String[] part = command.split("\\s+");
     String name = part[0];
@@ -49,15 +64,10 @@ public class Board {
     System.out.println("Data: " + value);
 
     switch (name) {
-      //case "INSERT" -> insertClicked(value);
-      //case "DRAW" -> drawClicked();
-      //case "DELETE" -> deleteClicked(value);
-      //case "SEARCH" -> searchClicked(value);
+      case "INSERT" -> insertStone(value);
       case "BYE" -> socket.close();
     }
   }
-<<<<<<< Updated upstream
-=======
 
   private void insertStone(String value) {
     int row = getRow(value.charAt(0));
@@ -271,5 +281,4 @@ public class Board {
     }
   }
 
->>>>>>> Stashed changes
 }
