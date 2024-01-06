@@ -15,12 +15,15 @@ import java.sql.SQLException;
 
 public class DatabaseConnection {
 
-  private static void dothings() {
-    String uname = "root";
-    String pass = "qwerty";
+  public static void retrieve()  {
+    String dbUserName = "root";
+    String dbPassword = "qwerty";
+    String dbName = "sakila";
     String query = "SELECT * FROM actor";
 
-    try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost:3306/sakila", uname, pass);
+    try (
+
+        Connection con = DriverManager.getConnection("jdbc:mysql://localhost/" + dbName + "?user=" + dbUserName + "&password=" + dbPassword + "&useUnicode=true&characterEncoding=UTF-8");
          PreparedStatement st = con.prepareStatement(query);
          ResultSet rs = st.executeQuery()) {
 
@@ -38,39 +41,4 @@ public class DatabaseConnection {
     }
   }
 
-  public  static void retrieve() {
-    try {
-      TrustManager[] trustAllCerts = new TrustManager[]{
-          new X509TrustManager() {
-            public X509Certificate[] getAcceptedIssuers() {
-              return null;
-            }
-
-            public void checkClientTrusted(X509Certificate[] certs, String authType) {
-            }
-
-            public void checkServerTrusted(X509Certificate[] certs, String authType) throws CertificateException {
-              // Perform certificate validation if needed
-            }
-          }
-      };
-
-      SSLContext sslContext = null;
-      try {
-        sslContext = SSLContext.getInstance("TLS");
-      } catch (NoSuchAlgorithmException ex) {
-        throw new RuntimeException(ex);
-      }
-      try {
-        sslContext.init(null, trustAllCerts, null);
-      } catch (KeyManagementException ex) {
-        throw new RuntimeException(ex);
-      }
-
-      dothings();
-
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
 }

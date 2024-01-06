@@ -1,12 +1,15 @@
 package org.example;
 
+import javax.net.ssl.X509TrustManager;
 import java.io.*;
 import java.net.*;
+import java.security.Security;
+import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.logging.Level;
 
 public class ServerApp {
-  public static void main(String[] args) throws SQLException, ClassNotFoundException {
+  public static void main(String[] args) {
 
    DatabaseConnection.retrieve();
 
@@ -22,4 +25,6 @@ public class ServerApp {
       ex.printStackTrace();
     }
   }
+
+
 }
