@@ -19,9 +19,10 @@ public class ServerApp {
 
   int gameID = DatabaseConnection.saveNewGame();
 
-  String move = "WHITE,2A";
+  String move = "WHITE,7H";
   DatabaseConnection.saveMove(move, gameID);
 
+  DatabaseConnection.saveWinner("BLACK", gameID);
 
     try (ServerSocket serverSocket = new ServerSocket(4444)) {
       MyLogger.logger.log(Level.INFO, "Server is listening on port 4444");

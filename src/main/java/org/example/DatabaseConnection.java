@@ -41,25 +41,43 @@ public class DatabaseConnection {
     int key = 0;
     ResultSet generatedKeys = null;
 
-    ZonedDateTime timestamp = ZonedDateTime.now();
-    String formattedTimestamp = timestamp.format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
+    String timestamp = getTimestamp();
 
     try (Connection con = DriverManager.getConnection(connectionString)) {
       con.setCatalog("Go");
 
       try (PreparedStatement insertGame = con.prepareStatement("INSERT INTO games (timestamp) VALUES (?)", Statement.RETURN_GENERATED_KEYS)) {
 
-        insertGame.setString(1, formattedTimestamp);
+        insertGame.setString(1, timestamp);
         insertGame.executeUpdate();
 
         generatedKeys = insertGame.getGeneratedKeys();
         generatedKeys.next();
         key = generatedKeys.getInt(1);
+
+        MyLogger.logger.log(Level.INFO, "Saved new game with id: " + key);
       }
     } catch (SQLException e) {
       e.printStackTrace();
     }
     return key;
+  }
+
+  public static void saveWinner(String player, int gameID) {
+
+    try (Connection con = DriverManager.getConnection(connectionString)) {
+      con.setCatalog("Go");
+
+      try (PreparedStatement insertPlayer = con.prepareStatement("UPDATE games SET player = ? WHERE id = ?")) {
+        insertPlayer.setString(1, player);
+        insertPlayer.setInt(2, gameID);
+        insertPlayer.executeUpdate();
+
+        MyLogger.logger.log(Level.INFO, "Saved winner: " + player + " of a game: " + gameID);
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
   }
 
   public static void saveMove(String data, int gameID) {
@@ -68,8 +86,7 @@ public class DatabaseConnection {
     String player = moveData[0];
     String placement = moveData[1];
 
-    ZonedDateTime timestamp = ZonedDateTime.now();
-    String formattedTimestamp = timestamp.format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
+    String timestamp = getTimestamp();
 
     try (Connection con = DriverManager.getConnection(connectionString)) {
       con.setCatalog("Go");
@@ -77,12 +94,12 @@ public class DatabaseConnection {
       try (PreparedStatement insertGame = con.prepareStatement("INSERT INTO moves (game_id, timestamp, player, placement) VALUES (?, ?, ?, ?)")) {
 
         insertGame.setInt(1, gameID);
-        insertGame.setString(2, formattedTimestamp);
+        insertGame.setString(2, timestamp);
         insertGame.setString(3, player);
         insertGame.setString(4, placement);
         insertGame.executeUpdate();
 
-        MyLogger.logger.log(Level.INFO, "Saved move: " + gameID + " " + formattedTimestamp + " " + player + " " + placement);
+        MyLogger.logger.log(Level.INFO, "Saved move: " + gameID + " " + timestamp + " " + player + " " + placement);
       }
     } catch (SQLException e) {
       e.printStackTrace();
@@ -111,6 +128,12 @@ public class DatabaseConnection {
     } catch (SQLException e) {
       e.printStackTrace();
     }
+  }
+
+  private static String getTimestamp() {
+    ZonedDateTime timestamp = ZonedDateTime.now();
+
+    return timestamp.format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
   }
 }
 
