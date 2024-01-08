@@ -4,6 +4,7 @@ import java.sql.*;
 import java.sql.Connection;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.logging.Level;
 
 public class DatabaseConnection {
 
@@ -39,12 +40,14 @@ public class DatabaseConnection {
   public static int saveNewGame() throws SQLException {
     int key = 0;
     ResultSet generatedKeys = null;
+
+    ZonedDateTime timestamp = ZonedDateTime.now();
+    String formattedTimestamp = timestamp.format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
+
     try (Connection con = DriverManager.getConnection(connectionString)) {
       con.setCatalog("Go");
 
-      try (PreparedStatement insertGame = con.prepareStatement("INSERT INTO Games (timestamp) VALUES (?)", Statement.RETURN_GENERATED_KEYS)) {
-        ZonedDateTime timestamp = ZonedDateTime.now();
-        String formattedTimestamp = timestamp.format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
+      try (PreparedStatement insertGame = con.prepareStatement("INSERT INTO games (timestamp) VALUES (?)", Statement.RETURN_GENERATED_KEYS)) {
 
         insertGame.setString(1, formattedTimestamp);
         insertGame.executeUpdate();
@@ -52,7 +55,6 @@ public class DatabaseConnection {
         generatedKeys = insertGame.getGeneratedKeys();
         generatedKeys.next();
         key = generatedKeys.getInt(1);
-        //key = generatedKeys.getInt(1);
       }
     } catch (SQLException e) {
       e.printStackTrace();
@@ -60,13 +62,31 @@ public class DatabaseConnection {
     return key;
   }
 
-  private static void saveToMoves(String data) {
+  public static void saveMove(String data, int gameID) {
   String[] moveData = data.split(",");
-  //TODO: getting game id
- // String game_id =
-    String timestamp = moveData[0];
-    String player = moveData[1];
-    String placement = moveData[2];
+
+    String player = moveData[0];
+    String placement = moveData[1];
+
+    ZonedDateTime timestamp = ZonedDateTime.now();
+    String formattedTimestamp = timestamp.format(DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss"));
+
+    try (Connection con = DriverManager.getConnection(connectionString)) {
+      con.setCatalog("Go");
+
+      try (PreparedStatement insertGame = con.prepareStatement("INSERT INTO moves (game_id, timestamp, player, placement) VALUES (?, ?, ?, ?)")) {
+
+        insertGame.setInt(1, gameID);
+        insertGame.setString(2, formattedTimestamp);
+        insertGame.setString(3, player);
+        insertGame.setString(4, placement);
+        insertGame.executeUpdate();
+
+        MyLogger.logger.log(Level.INFO, "Saved move: " + gameID + " " + formattedTimestamp + " " + player + " " + placement);
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
 
   }
 

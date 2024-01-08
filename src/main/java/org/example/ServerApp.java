@@ -1,6 +1,7 @@
 package org.example;
 
 import javax.net.ssl.X509TrustManager;
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.*;
 import java.security.Security;
@@ -16,7 +17,10 @@ public class ServerApp {
   public static void main(String[] args) throws SQLException {
   DatabaseConnection.prepareDatabase();
 
-  System.out.println(DatabaseConnection.saveNewGame());
+  int gameID = DatabaseConnection.saveNewGame();
+
+  String move = "WHITE,2A";
+  DatabaseConnection.saveMove(move, gameID);
 
 
     try (ServerSocket serverSocket = new ServerSocket(4444)) {
