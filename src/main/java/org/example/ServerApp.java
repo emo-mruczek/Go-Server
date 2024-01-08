@@ -10,7 +10,7 @@ import java.util.logging.Level;
 
 public class ServerApp {
   public static void main(String[] args) {
-
+DatabaseConnection.prepareDatabase();
    DatabaseConnection.retrieve();
 
     try (ServerSocket serverSocket = new ServerSocket(4444)) {

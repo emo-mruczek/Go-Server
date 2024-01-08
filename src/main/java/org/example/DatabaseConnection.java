@@ -7,33 +7,32 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.sql.*;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 public class DatabaseConnection {
 
+  //change if needed
+  static String username = "root";
+  static String password = "qwerty";
+  static String databaseName = "Go";
+
   public static void retrieve()  {
-    String dbUserName = "root";
-    String dbPassword = "qwerty";
-    String dbName = "sakila";
-    String query = "SELECT * FROM actor";
 
-    try (
+    try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost/" + databaseName + "?user=" + username + "&password=" + password + "&useUnicode=true&characterEncoding=UTF-8")) {
 
-        Connection con = DriverManager.getConnection("jdbc:mysql://localhost/" + dbName + "?user=" + dbUserName + "&password=" + dbPassword + "&useUnicode=true&characterEncoding=UTF-8");
-         PreparedStatement st = con.prepareStatement(query);
-         ResultSet rs = st.executeQuery()) {
+      // Use the 'Go Database'
+      con.setCatalog("Go");
 
+      DatabaseMetaData metaData = con.getMetaData();
 
-      while (rs.next()) {
-        int actorId = rs.getInt("actor_id");
-        String firstName = rs.getString("first_name");
-        String lastName = rs.getString("last_name");
+      // Get table information
+      ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"});
 
-        System.out.println("Actor ID: " + actorId + ", Name: " + firstName + " " + lastName);
+      System.out.println("Tables in the database:");
+      while (tables.next()) {
+        String tableName = tables.getString("TABLE_NAME");
+        System.out.println(tableName);
       }
 
     } catch (SQLException e) {
@@ -41,4 +40,37 @@ public class DatabaseConnection {
     }
   }
 
-}
+
+    public static void save(String type, String data) {
+
+    System.out.println(type + ": " + data);
+    }
+
+    public static void prepareDatabase() {
+
+      try (Connection con = DriverManager.getConnection("jdbc:mysql://localhost/?user=" + username + "&password=" + password + "&useUnicode=true&characterEncoding=UTF-8")) {
+
+        try (Statement createDbStatement = con.createStatement()) {
+          createDbStatement.executeUpdate("CREATE DATABASE IF NOT EXISTS `Go`");
+        }
+
+        con.setCatalog("Go");
+
+        try (Statement createGamesTableStatement = con.createStatement()) {
+          createGamesTableStatement.executeUpdate("CREATE TABLE IF NOT EXISTS Games (id INT AUTO_INCREMENT PRIMARY KEY, timestamp TIMESTAMP, player ENUM('BLACK', 'WHITE'))");
+        }
+
+        try (Statement createMovesTableStatement = con.createStatement()) {
+          createMovesTableStatement.executeUpdate("CREATE TABLE IF NOT EXISTS Moves (id INT AUTO_INCREMENT PRIMARY KEY, game_id INT, timestamp TIMESTAMP, player ENUM('BLACK', 'WHITE'), placement CHAR(2), FOREIGN KEY (game_id) REFERENCES Games(id))");
+        }
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+
+
+
+
+
