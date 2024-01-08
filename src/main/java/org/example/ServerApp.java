@@ -6,12 +6,18 @@ import java.net.*;
 import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 
 public class ServerApp {
-  public static void main(String[] args) {
-DatabaseConnection.prepareDatabase();
-   DatabaseConnection.retrieve();
+  public static void main(String[] args) throws SQLException {
+  DatabaseConnection.prepareDatabase();
+
+  System.out.println(DatabaseConnection.saveNewGame());
+
 
     try (ServerSocket serverSocket = new ServerSocket(4444)) {
       MyLogger.logger.log(Level.INFO, "Server is listening on port 4444");
