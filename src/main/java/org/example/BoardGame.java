@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-public class Board {
+public class BoardGame {
   private final int size;
   private final Socket socket;
   private final BufferedReader in;
@@ -21,7 +21,7 @@ public class Board {
   private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
   private int gameID;
 
-  public Board(int size, Socket socket, BufferedReader in, int gameID) {
+  public BoardGame(int size, Socket socket, BufferedReader in, int gameID) {
     this.size = size;
     this.socket = socket;
     this.in = in;
