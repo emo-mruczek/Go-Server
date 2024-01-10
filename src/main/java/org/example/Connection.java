@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.logging.Level;
 
 public class Connection {
@@ -22,11 +23,16 @@ public class Connection {
       String receivedType = in.readLine();
 
       MyLogger.logger.log(Level.INFO, "I've received " + receivedType);
-      Board board = new Board(Integer.parseInt(receivedType), socket, in);
+
+      int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
+
+      Board board = new Board(Integer.parseInt(receivedType), socket, in, gameID);
       board.clientHandler();
     } catch (IOException ex) {
       System.out.println("Server exception: " + ex.getMessage());
       ex.printStackTrace();
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
     }
   }
 }
