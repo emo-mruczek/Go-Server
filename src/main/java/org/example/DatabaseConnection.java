@@ -4,7 +4,6 @@ import java.sql.*;
 import java.sql.Connection;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.logging.Level;
 
 public class DatabaseConnection {
@@ -33,19 +32,41 @@ public class DatabaseConnection {
           String information = id + "," + timestamp + "," + size + "," + player;
           gamesInfo.append(information).append(";");
         }
-        // DatabaseMetaData metaData = con.getMetaData();
-
-        // ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"});
-
-        // System.out.println("Tables in the database:");
-        // while (tables.next()) {
-        //  String tableName = tables.getString("TABLE_NAME");
-        //  System.out.println(tableName);
       }
   } catch (SQLException e) {
       e.printStackTrace();
     }
     return gamesInfo.toString();
+  }
+
+  public static String retrieveMoves(int gameID) {
+    StringBuilder movesInfo = new StringBuilder();
+
+    try (Connection con = DriverManager.getConnection(connectionString)) {
+      con.setCatalog("Go");
+
+      try (PreparedStatement retrieve = con.prepareStatement("SELECT * FROM Moves WHERE game_id = ?")) {
+
+        retrieve.setInt(1, gameID);
+        ResultSet resultSet = retrieve.executeQuery();
+
+        while (resultSet.next()) {
+          int id = resultSet.getInt("id");
+          String timestamp = resultSet.getString("timestamp");
+          String player = resultSet.getString("player");
+          String row = resultSet.getString("placementRow");
+          String col = resultSet.getString("placementCol");
+          String type = resultSet.getString("type");
+
+          MyLogger.logger.log(Level.INFO, "Retriving informations: " + id + " " + timestamp + " " + player + " " + row + " " + col + " " + type);
+          String information = id + "," + timestamp + "," + player + "," + row + "," + col + "," + type;
+          movesInfo.append(information).append(";");
+        }
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+    return movesInfo.toString();
   }
 
 
