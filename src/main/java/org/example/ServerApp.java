@@ -17,6 +17,7 @@ public class ServerApp {
   public static void main(String[] args) throws SQLException {
   DatabaseConnection.prepareDatabase();
 
+
     try (ServerSocket serverSocket = new ServerSocket(4444)) {
       MyLogger.logger.log(Level.INFO, "Server is listening on port 4444");
       while (true) {

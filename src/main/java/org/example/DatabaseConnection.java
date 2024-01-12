@@ -4,6 +4,7 @@ import java.sql.*;
 import java.sql.Connection;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.logging.Level;
 
 public class DatabaseConnection {
@@ -14,25 +15,37 @@ public class DatabaseConnection {
   private static final String databaseName = "Go";
   private static final String connectionString = "jdbc:mysql://localhost/" + databaseName + "?user=" + username + "&password=" + password + "&useUnicode=true&characterEncoding=UTF-8";
 
-  //TODO: retriving (cuz below code is just for testing purposes)
-  public static void retrieve() {
-
+  public static String retrieveGames() {
+    StringBuilder gamesInfo = new StringBuilder();
+    
     try (Connection con = DriverManager.getConnection(connectionString)) {
-
       con.setCatalog("Go");
 
-      DatabaseMetaData metaData = con.getMetaData();
+      try (PreparedStatement retrieve = con.prepareStatement("SELECT * FROM Games")) {
+        ResultSet resultSet = retrieve.executeQuery();
+        while (resultSet.next()) {
+          int id = resultSet.getInt("id");
+          String timestamp = resultSet.getString("timestamp");
+          int size = resultSet.getInt("size");
+          String player = resultSet.getString("player");
 
-      ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"});
+          MyLogger.logger.log(Level.INFO, "Retriving informations: " + id + " " + timestamp + " " + size + " " + player);
+          String information = id + "," + timestamp + "," + size + "," + player;
+          gamesInfo.append(information).append(";");
+        }
+        // DatabaseMetaData metaData = con.getMetaData();
 
-      System.out.println("Tables in the database:");
-      while (tables.next()) {
-        String tableName = tables.getString("TABLE_NAME");
-        System.out.println(tableName);
+        // ResultSet tables = metaData.getTables(null, null, "%", new String[]{"TABLE"});
+
+        // System.out.println("Tables in the database:");
+        // while (tables.next()) {
+        //  String tableName = tables.getString("TABLE_NAME");
+        //  System.out.println(tableName);
       }
-    } catch (SQLException e) {
+  } catch (SQLException e) {
       e.printStackTrace();
     }
+    return gamesInfo.toString();
   }
 
 
