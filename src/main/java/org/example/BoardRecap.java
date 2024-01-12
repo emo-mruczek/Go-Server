@@ -1,8 +1,11 @@
 package org.example;
 
+import java.net.Socket;
+
 public class BoardRecap {
 
-  public BoardRecap() {
-    System.out.println(DatabaseConnection.retrieveGames());
+  public BoardRecap(Socket socket) {
+    String message = DatabaseConnection.retrieveGames();
+    MessageController.sendMessage(message, socket);
   }
 }

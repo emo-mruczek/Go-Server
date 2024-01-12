@@ -26,7 +26,7 @@ public class Connection {
       MyLogger.logger.log(Level.INFO, "I've received " + receivedType);
 
       if (Objects.equals(receivedType, "RECAP")) {
-        BoardRecap board = new BoardRecap();
+        BoardRecap board = new BoardRecap(socket);
       }
       else {
 
