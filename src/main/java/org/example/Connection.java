@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.logging.Level;
 
 public class Connection {
@@ -24,10 +25,16 @@ public class Connection {
 
       MyLogger.logger.log(Level.INFO, "I've received " + receivedType);
 
-      int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
+      if (Objects.equals(receivedType, "RECAP")) {
+        BoardRecap board = new BoardRecap(socket);
+      }
+      else {
 
-      Board board = new Board(Integer.parseInt(receivedType), socket, in, gameID);
-      board.clientHandler();
+        int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
+
+        BoardGame board = new BoardGame(Integer.parseInt(receivedType), socket, in, gameID);
+        board.clientHandler();
+      }
     } catch (IOException ex) {
       System.out.println("Server exception: " + ex.getMessage());
       ex.printStackTrace();

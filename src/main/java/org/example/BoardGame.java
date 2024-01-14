@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-public class Board {
+public class BoardGame {
   private final int size;
   private final Socket socket;
   private final BufferedReader in;
@@ -21,7 +21,7 @@ public class Board {
   private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
   private int gameID;
 
-  public Board(int size, Socket socket, BufferedReader in, int gameID) {
+  public BoardGame(int size, Socket socket, BufferedReader in, int gameID) {
     this.size = size;
     this.socket = socket;
     this.in = in;
@@ -211,14 +211,15 @@ public class Board {
       String[] position = capturedStone.split("");
       int capturedRow = getRow(position[0].charAt(0));
       int capturedCol = getCol(position[1].charAt(0));
+      MessageController.sendMessage("DELETE " + capturedStone, socket);
+      DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
 
       gameBoard[capturedRow][capturedCol] = 0;
     }
 
-    for (String capturedStone : capturedStones) {
-      MessageController.sendMessage("DELETE " + capturedStone, socket);
-      DatabaseConnection.saveMove(prepareStatement(color, row, col, "DELETION"), gameID);
-    }
+    //for (String capturedStone : capturedStones) {
+   //
+    //}
   }
 
   private void captureStonesDFS(int row, int col, int color, int[][] board, boolean[][] visited, List<String> capturedStones) {
