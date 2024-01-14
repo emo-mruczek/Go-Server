@@ -211,14 +211,15 @@ public class BoardGame {
       String[] position = capturedStone.split("");
       int capturedRow = getRow(position[0].charAt(0));
       int capturedCol = getCol(position[1].charAt(0));
+      MessageController.sendMessage("DELETE " + capturedStone, socket);
+      DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
 
       gameBoard[capturedRow][capturedCol] = 0;
     }
 
-    for (String capturedStone : capturedStones) {
-      MessageController.sendMessage("DELETE " + capturedStone, socket);
-      DatabaseConnection.saveMove(prepareStatement(color, row, col, "DELETION"), gameID);
-    }
+    //for (String capturedStone : capturedStones) {
+   //
+    //}
   }
 
   private void captureStonesDFS(int row, int col, int color, int[][] board, boolean[][] visited, List<String> capturedStones) {
