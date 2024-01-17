@@ -27,8 +27,9 @@ public class Connection {
 
       if (Objects.equals(receivedType, "RECAP")) {
         BoardRecap board = new BoardRecap(socket);
-      }
-      else {
+      } else {
+        String mode = in.readLine();
+        MyLogger.logger.log(Level.INFO, "My mode: " + mode);
 
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
 
