@@ -9,15 +9,16 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.logging.Level;
 
-public class Connection {
+public class Connection implements Runnable {
   private final Socket socket;
 
-  public Connection(Socket socket) {
+  public Connection(Socket socket)  {
     this.socket = socket;
-    run();
+
   }
 
-  private void run() {
+  @Override
+  public void run() {
     try {
       InputStream input = socket.getInputStream();
       BufferedReader in = new BufferedReader(new InputStreamReader(input));
