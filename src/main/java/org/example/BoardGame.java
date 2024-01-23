@@ -11,7 +11,8 @@ import java.util.logging.Level;
 
 public class BoardGame {
   private final int size;
-  private final Socket socket;
+  private final Socket mySocket;
+  private final Socket oponnentSocket;
   private final BufferedReader in;
   private PrintWriter out;
   private int gameBoard[][];
@@ -21,9 +22,10 @@ public class BoardGame {
   private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
   private int gameID;
 
-  public BoardGame(int size, Socket socket, BufferedReader in, int gameID) {
+  public BoardGame(int size, Socket mySocket, Socket oponnentSocket, BufferedReader in, int gameID) {
     this.size = size;
-    this.socket = socket;
+    this.mySocket = mySocket;
+    this.oponnentSocket = oponnentSocket;
     this.in = in;
     this.gameBoard = new int[size][size];
     this.gameID = gameID;
@@ -44,7 +46,7 @@ public class BoardGame {
 
   public void clientHandler() {
     try {
-      OutputStream output = socket.getOutputStream();
+      OutputStream output = mySocket.getOutputStream();
       out = new PrintWriter(output, true);
 
       String command;
@@ -67,7 +69,7 @@ public class BoardGame {
 
     switch (name) {
       case "INSERT" -> insertStone(value);
-      case "BYE" -> socket.close();
+      case "BYE" -> mySocket.close();
     }
   }
 
@@ -81,7 +83,7 @@ public class BoardGame {
 
   private void makeMove(int row, int col, int color) {
     if (gameBoard[row][col] != 0) {
-      MessageController.sendMessage("INSERT FALSE", socket);
+      MessageController.sendMessage("INSERT FALSE", mySocket);
       MyLogger.logger.log(Level.INFO, "Field is already occupied: " + row + col);
       return;
     }
@@ -93,7 +95,7 @@ public class BoardGame {
     if (isCapturingMove(row, col, color, tempBoard)) {
 
       gameBoard[row][col] = color;
-      MessageController.sendMessage("INSERT TRUE", socket);
+      MessageController.sendMessage("INSERT TRUE", mySocket);
       MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
       DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
 
@@ -106,11 +108,12 @@ public class BoardGame {
       }
     } else {
       if (isSuicidalMove(row, col, color, tempBoard)) {
-        MessageController.sendMessage("INSERT FALSE", socket);
+        MessageController.sendMessage("INSERT FALSE", mySocket);
         MyLogger.logger.log(Level.INFO, "Suicidal move: " + row + col);
       } else {
         gameBoard[row][col] = color;
-        MessageController.sendMessage("INSERT TRUE", socket);
+        MessageController.sendMessage("INSERT TRUE", mySocket);
+        MessageController.sendMessage("OPPONENT " + convertPosition(row) + "," + convertPosition(col), oponnentSocket);
         MyLogger.logger.log(Level.INFO, "Inserion ok: " + row + col);
         DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
 
@@ -211,7 +214,7 @@ public class BoardGame {
       String[] position = capturedStone.split("");
       int capturedRow = getRow(position[0].charAt(0));
       int capturedCol = getCol(position[1].charAt(0));
-      MessageController.sendMessage("DELETE " + capturedStone, socket);
+      MessageController.sendMessage("DELETE " + capturedStone, mySocket);
       DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
 
       gameBoard[capturedRow][capturedCol] = 0;

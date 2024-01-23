@@ -10,31 +10,32 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 public class Connection implements Runnable {
-  private final Socket socket;
+  private final Socket mySocket;
+  private final Socket opponentSocket;
 
-  public Connection(Socket socket)  {
-    this.socket = socket;
-
+  public Connection(Socket mySocket, Socket opponentSocket)  {
+    this.mySocket = mySocket;
+    this.opponentSocket = opponentSocket;
   }
 
   @Override
   public void run() {
     try {
-      InputStream input = socket.getInputStream();
+      InputStream input = mySocket.getInputStream();
       BufferedReader in = new BufferedReader(new InputStreamReader(input));
       String receivedType = in.readLine();
 
-      MyLogger.logger.log(Level.INFO, "I've received " + receivedType);
+     MyLogger.logger.log(Level.INFO, "I've received " + receivedType);
 
       if (Objects.equals(receivedType, "RECAP")) {
-        BoardRecap board = new BoardRecap(socket);
+        BoardRecap board = new BoardRecap(mySocket);
       } else {
-        String mode = in.readLine();
-        MyLogger.logger.log(Level.INFO, "My mode: " + mode);
+       // String mode = in.readLine();
+       // MyLogger.logger.log(Level.INFO, "My mode: " + mode);
 
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
 
-        BoardGame board = new BoardGame(Integer.parseInt(receivedType), socket, in, gameID);
+        BoardGame board = new BoardGame(Integer.parseInt(receivedType), mySocket, opponentSocket, in, gameID);
         board.clientHandler();
       }
     } catch (IOException ex) {

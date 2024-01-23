@@ -18,10 +18,12 @@ public class ServerApp {
         Socket secondPlayer = serverSocket.accept();
         MessageController.sendMessage("SECOND", secondPlayer);
         MessageController.sendMessage(size, secondPlayer);
+        MessageController.sendMessage("whatever", firstPlayer);
         MyLogger.logger.log(Level.INFO, "Second client connected");
+        //String whatever = MessageController.receiveMessage(secondPlayer);
 
-        Connection task1 = new Connection(firstPlayer);
-        Connection task2 = new Connection(secondPlayer);
+        Connection task1 = new Connection(firstPlayer, secondPlayer);
+        Connection task2 = new Connection(secondPlayer, firstPlayer);
         Thread t1 = new Thread(task1);
         t1.start();
         Thread t2 = new Thread(task2);
