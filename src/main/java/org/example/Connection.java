@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -11,9 +12,11 @@ import java.util.logging.Level;
 
 public class Connection {
   private final Socket socket;
+  private final ServerSocket serverSocket;
 
-  public Connection(Socket socket) {
+  public Connection(Socket socket, ServerSocket serverSocket) {
     this.socket = socket;
+    this.serverSocket = serverSocket;
     run();
   }
 
@@ -27,8 +30,21 @@ public class Connection {
 
       if (Objects.equals(receivedType, "RECAP")) {
         BoardRecap board = new BoardRecap(socket);
-      }
-      else {
+      } else if (Objects.equals(receivedType, "ONLINE")) {
+        MessageController.sendMessage("FIRST", socket);
+        String size = MessageController.receiveMessage(socket);
+
+        Socket secondSocket = serverSocket.accept();
+        MessageController.sendMessage("SECOND", secondSocket);
+        MessageController.sendMessage(size, secondSocket);
+
+       // int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(size));
+
+        System.out.println("OK!");
+       // OnlineGameBoard task = new OnlineGameBoard(socket, secondSocket);
+       // Thread t1 = new Thread(task);
+       // t1.start();
+      } else {
 
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
 
