@@ -26,6 +26,14 @@ public class OnlineGameBoard implements Runnable {
   public void run() {
     MessageController.sendMessage("JOINED", firstPlayer);
 
+    while (true) {
+      String fromFirst = MessageController.receiveMessage(firstPlayer);
+      MessageController.sendMessage(fromFirst, secondPlayer);
+
+      String fromSecond = MessageController.receiveMessage(secondPlayer);
+      MessageController.sendMessage(fromSecond, firstPlayer);
+    }
+
   }
 
 

@@ -35,6 +35,7 @@ public class Connection {
         String size = MessageController.receiveMessage(socket);
 
         Socket secondSocket = serverSocket.accept();
+        System.out.println(MessageController.receiveMessage(secondSocket));
         MessageController.sendMessage("SECOND", secondSocket);
         MessageController.sendMessage(size, secondSocket);
 
