@@ -21,6 +21,4 @@ public class ServerApp {
       ex.printStackTrace();
     }
   }
-
-
 }

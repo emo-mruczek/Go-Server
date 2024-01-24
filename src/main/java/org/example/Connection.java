@@ -38,12 +38,12 @@ public class Connection {
         MessageController.sendMessage("SECOND", secondSocket);
         MessageController.sendMessage(size, secondSocket);
 
-       // int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(size));
+        int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(size));
 
         System.out.println("OK!");
-       // OnlineGameBoard task = new OnlineGameBoard(socket, secondSocket);
-       // Thread t1 = new Thread(task);
-       // t1.start();
+        OnlineGameBoard task = new OnlineGameBoard(socket, secondSocket, Integer.parseInt(size), gameID);
+        Thread t1 = new Thread(task);
+        t1.start();
       } else {
 
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
