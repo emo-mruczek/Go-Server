@@ -1,6 +1,8 @@
 package org.example;
 
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 
 public class OnlineGameBoard implements Runnable {
@@ -10,6 +12,11 @@ public class OnlineGameBoard implements Runnable {
 
   private Socket currPlayer;
   private Socket currOpponent;
+
+  private int blackStones;  // Liczba czarnych kamieni na planszy
+  private int whiteStones;  // Liczba białych kamieni na planszy
+  private int blackCaptures;  // Liczba przejętych kamieni przez czarnego gracza
+  private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
 
   private int gameBoard[][];
   private int gameID;
@@ -53,54 +60,57 @@ public class OnlineGameBoard implements Runnable {
   }
 
   private void makeMove(int row, int col, int color) {
-      if (gameBoard[row][col] != 0) {
-       MessageController.sendMessage("INSERT FALSE", currPlayer);
-        MyLogger.logger.log(Level.INFO, "Field is already occupied: " + row + col);
+    if (gameBoard[row][col] != 0) {
+      MessageController.sendMessage("INSERT FALSE", currPlayer);
+      MyLogger.logger.log(Level.INFO, "Field is already occupied: " + row + col);
 
+      String anotherMove = MessageController.receiveMessage(currPlayer);
+      insertStone(anotherMove);
+    }
+
+    int[][] tempBoard = copyBoard(gameBoard);
+
+    tempBoard[row][col] = color;
+
+    if (isCapturingMove(row, col, color, tempBoard)) {
+
+      gameBoard[row][col] = color;
+      MessageController.sendMessage("INSERT TRUE", currPlayer);
+      MessageController.sendMessage(row + String.valueOf(col) + color, currPlayer);
+      MessageController.sendMessage("INSERT TRUE", currOpponent);
+      MessageController.sendMessage(row + String.valueOf(col) + color, currOpponent);
+      MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
+         DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
+
+        if (color == 1) {
+           blackCaptures++;
+          whiteStones--;
+         } else {
+           whiteCaptures++;
+           blackStones--;
+       }
+    } else {
+      if (isSuicidalMove(row, col, color, tempBoard)) {
+        MessageController.sendMessage("INSERT FALSE", currPlayer);
         String anotherMove = MessageController.receiveMessage(currPlayer);
         insertStone(anotherMove);
+        MyLogger.logger.log(Level.INFO, "Suicidal move: " + row + col);
+      } else {
+        gameBoard[row][col] = color;
+        MessageController.sendMessage("INSERT TRUE", currPlayer);
+        MessageController.sendMessage(row + String.valueOf(col) + color, currPlayer);
+        MessageController.sendMessage("INSERT TRUE", currOpponent);
+        MessageController.sendMessage(row + String.valueOf(col) + color, currOpponent);
+        MyLogger.logger.log(Level.INFO, "Insertion ok: " + row + col);
+            DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
+
+             if (color == 1) {
+              blackStones++;
+            } else if (color == 2) {
+              whiteStones++;
+            }
       }
-
-      int[][] tempBoard = copyBoard(gameBoard);
-
-      tempBoard[row][col] = color;
-
-    //   if (isCapturingMove(row, col, color, tempBoard)) {
-
-    //    gameBoard[row][col] = color;
-    //   MessageController.sendMessage("INSERT TRUE", socket);
-    //   MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
-    //   DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
-
-    //   if (color == 1) {
-    //     blackCaptures++;
-    //    whiteStones--;
-    //   } else {
-    //     whiteCaptures++;
-    //     blackStones--;
-    //  }
-    // } else {
-        if (isSuicidalMove(row, col, color, tempBoard)) {
-          MessageController.sendMessage("INSERT FALSE", currPlayer);
-          String anotherMove = MessageController.receiveMessage(currPlayer);
-          insertStone(anotherMove);
-         MyLogger.logger.log(Level.INFO, "Suicidal move: " + row + col);
-       } else {
-    gameBoard[row][col] = color;
-    MessageController.sendMessage("INSERT TRUE", currPlayer);
-    MessageController.sendMessage(row + String.valueOf(col) + color, currPlayer);
-    MessageController.sendMessage("INSERT TRUE", currOpponent);
-    MessageController.sendMessage(row + String.valueOf(col) + color, currOpponent);
-    MyLogger.logger.log(Level.INFO, "Insertion ok: " + row + col);
-    //    DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
-
-    //     if (color == 1) {
-    //      blackStones++;
-    //    } else if (color == 2) {
-    //      whiteStones++;
-    //    }
-   //  }
-     }
+    }
   }
 
 
@@ -195,7 +205,78 @@ public class OnlineGameBoard implements Runnable {
     return row >= 0 && row < board.length && col >= 0 && col < board[0].length;
   }
 
+  public boolean isCapturingMove(int row, int col, int color, int[][] board) {
+    int opponentColor = (color == 1) ? 2 : 1;
 
+    int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
+    for (int[] neighbor : neighbors) {
+      int newRow = row + neighbor[0];
+      int newCol = col + neighbor[1];
+
+      if (isValidPosition(newRow, newCol, board) && board[newRow][newCol] == opponentColor) {
+        if (isGroupSurrounded(newRow, newCol, opponentColor, board)) {
+          captureStones(newRow, newCol, opponentColor, board);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private void captureStones(int row, int col, int color, int[][] board) {
+    List<String> capturedStones = new ArrayList<>();
+    captureStonesDFS(row, col, color, board, new boolean[board.length][board[0].length], capturedStones);
+
+    for (String capturedStone : capturedStones) {
+      String[] position = capturedStone.split("");
+      int capturedRow = getRow(position[0].charAt(0));
+      int capturedCol = getCol(position[1].charAt(0));
+
+      MessageController.sendMessage("DELETE " + capturedStone, currPlayer);
+      MessageController.sendMessage("DELETE " + capturedStone, currOpponent);
+       DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
+
+      gameBoard[capturedRow][capturedCol] = 0;
+    }
+  }
+
+  private void captureStonesDFS(int row, int col, int color, int[][] board, boolean[][] visited, List<String> capturedStones) {
+    if (!isValidPosition(row, col, board) || visited[row][col]) {
+      return;
+    }
+
+    if (board[row][col] == color) {
+      visited[row][col] = true;
+      capturedStones.add(convertPosition(row) + convertPosition(col));
+
+      int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+
+      for (int[] neighbor : neighbors) {
+        int newRow = row + neighbor[0];
+        int newCol = col + neighbor[1];
+
+        captureStonesDFS(newRow, newCol, color, board, visited, capturedStones);
+      }
+    }
+  }
+
+  private String prepareStatement(int color, int row, int col, String type) {
+
+    String player;
+    if (color == 1)
+      player = "BLACK";
+    else
+      player = "WHITE";
+
+    String rowChar = convertPosition(row);
+    String colChar = convertPosition(col);
+
+    String statement = player + "," + rowChar + "," + colChar + "," + type;
+    MyLogger.logger.log(Level.INFO, "Prepared statement: " + statement);
+
+    return statement;
+  }
 
 }
