@@ -53,15 +53,17 @@ public class OnlineGameBoard implements Runnable {
   }
 
   private void makeMove(int row, int col, int color) {
-    //  if (gameBoard[row][col] != 0) {
-    //   MessageController.sendMessage("INSERT FALSE", socket);
-    //    MyLogger.logger.log(Level.INFO, "Field is already occupied: " + row + col);
-    //   return;
-    //  }
+      if (gameBoard[row][col] != 0) {
+       MessageController.sendMessage("INSERT FALSE", currPlayer);
+        MyLogger.logger.log(Level.INFO, "Field is already occupied: " + row + col);
 
-    //  int[][] tempBoard = copyBoard(gameBoard);
+        String anotherMove = MessageController.receiveMessage(currPlayer);
+        insertStone(anotherMove);
+      }
 
-    //  tempBoard[row][col] = color;
+      int[][] tempBoard = copyBoard(gameBoard);
+
+      tempBoard[row][col] = color;
 
     //   if (isCapturingMove(row, col, color, tempBoard)) {
 
@@ -78,10 +80,12 @@ public class OnlineGameBoard implements Runnable {
     //     blackStones--;
     //  }
     // } else {
-    //    if (isSuicidalMove(row, col, color, tempBoard)) {
-    //      MessageController.sendMessage("INSERT FALSE", socket);
-    //     MyLogger.logger.log(Level.INFO, "Suicidal move: " + row + col);
-    //   } else {
+        if (isSuicidalMove(row, col, color, tempBoard)) {
+          MessageController.sendMessage("INSERT FALSE", currPlayer);
+          String anotherMove = MessageController.receiveMessage(currPlayer);
+          insertStone(anotherMove);
+         MyLogger.logger.log(Level.INFO, "Suicidal move: " + row + col);
+       } else {
     gameBoard[row][col] = color;
     MessageController.sendMessage("INSERT TRUE", currPlayer);
     MessageController.sendMessage(row + String.valueOf(col) + color, currPlayer);
@@ -95,8 +99,8 @@ public class OnlineGameBoard implements Runnable {
     //    } else if (color == 2) {
     //      whiteStones++;
     //    }
-    //  }
-    //  }
+   //  }
+     }
   }
 
 
@@ -135,6 +139,63 @@ public class OnlineGameBoard implements Runnable {
       return String.valueOf((char) ('A' + pos - 10));
     }
   }
+
+  private int[][] copyBoard(int[][] original) {
+    // Stwórz kopię planszy
+    int[][] copy = new int[original.length][original[0].length];
+    for (int i = 0; i < original.length; i++) {
+      System.arraycopy(original[i], 0, copy[i], 0, original[i].length);
+    }
+    return copy;
+  }
+
+  private boolean isSuicidalMove(int row, int col, int color, int[][] board) {
+    int[][] tempBoard = copyBoard(board);
+
+    tempBoard[row][col] = color;
+
+    return isGroupSurrounded(row, col, color, tempBoard);
+  }
+
+  private boolean isGroupSurrounded(int row, int col, int color, int[][] board) {
+    boolean[][] visited = new boolean[board.length][board[0].length];
+    return isGroupSurroundedDFS(row, col, color, board, visited);
+  }
+
+  private boolean isGroupSurroundedDFS(int row, int col, int color, int[][] board, boolean[][] visited) {
+    // Wersja DFS sprawdzająca, czy grupa kamieni o danym kolorze jest otoczona
+    if (!isValidPosition(row, col, board) || visited[row][col]) {
+      return true;
+    }
+
+    if (board[row][col] == 0) {
+      return false;
+    }
+
+    if (board[row][col] != color) {
+      return true;
+    }
+
+    visited[row][col] = true;
+
+    int[][] neighbors = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
+    boolean surrounded = true;
+
+    for (int[] neighbor : neighbors) {
+      int newRow = row + neighbor[0];
+      int newCol = col + neighbor[1];
+
+      surrounded = surrounded && isGroupSurroundedDFS(newRow, newCol, color, board, visited);
+    }
+
+    return surrounded;
+  }
+
+  private boolean isValidPosition(int row, int col, int[][] board) {
+    return row >= 0 && row < board.length && col >= 0 && col < board[0].length;
+  }
+
+
 
 
 }
