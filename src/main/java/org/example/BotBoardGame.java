@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -22,6 +23,8 @@ public class BotBoardGame {
   private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
   private int gameID;
 
+  Bot bot;
+
   public BotBoardGame(int size, Socket socket, BufferedReader in, int gameID) {
     this.size = size;
     this.socket = socket;
@@ -33,6 +36,7 @@ public class BotBoardGame {
     this.whiteStones = 0;
     this.blackCaptures = 0;
     this.whiteCaptures = 0;
+    this.bot = new Bot(size, gameBoard);
   }
 
   private void initializeBoard() {
@@ -67,10 +71,30 @@ public class BotBoardGame {
     System.out.println("Data: " + value);
 
     switch (name) {
-      case "INSERT" -> insertStone(value);
+      case "INSERT" -> {
+        insertStone(value);
+        botMove();
+      }
       case "BYE" -> socket.close();
     }
   }
+
+  private void botMove() {
+    System.out.println(Arrays.deepToString(gameBoard));
+
+    bot.setBoard(gameBoard);
+    int[] botMove = bot.makeMove();
+
+    gameBoard[botMove[0]][botMove[1]] = 2;
+
+    String rowChar = convertPosition(botMove[0]);
+    String colChar = convertPosition(botMove[1]);
+
+    String stringBotMove = (rowChar + colChar);
+    MessageController.sendMessage(stringBotMove, socket);
+
+  }
+
 
   private void insertStone(String value) {
     int row = getRow(value.charAt(0));
@@ -96,7 +120,7 @@ public class BotBoardGame {
       gameBoard[row][col] = color;
       MessageController.sendMessage("INSERT TRUE", socket);
       MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
-     // DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
+      // DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
 
       if (color == 1) {
         blackCaptures++;
@@ -113,7 +137,7 @@ public class BotBoardGame {
         gameBoard[row][col] = color;
         MessageController.sendMessage("INSERT TRUE", socket);
         MyLogger.logger.log(Level.INFO, "Inserion ok: " + row + col);
-       // DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
+        // DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
 
         if (color == 1) {
           blackStones++;
@@ -187,7 +211,7 @@ public class BotBoardGame {
       int capturedRow = getRow(position[0].charAt(0));
       int capturedCol = getCol(position[1].charAt(0));
       MessageController.sendMessage("DELETE " + capturedStone, socket);
-     // DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
+      // DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
 
       gameBoard[capturedRow][capturedCol] = 0;
     }
