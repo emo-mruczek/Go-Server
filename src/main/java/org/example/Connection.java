@@ -42,7 +42,7 @@ public class Connection {
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(size));
 
         System.out.println("OK!");
-        OnlineGameBoard task = new OnlineGameBoard(socket, secondSocket, Integer.parseInt(size), gameID);
+        OnlineBoardGame task = new OnlineBoardGame(socket, secondSocket, Integer.parseInt(size), gameID);
         Thread t1 = new Thread(task);
         t1.start();
       } else {

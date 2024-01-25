@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-public class OnlineGameBoard implements Runnable {
+public class OnlineBoardGame implements Runnable {
 
   private Socket firstPlayer;
   private Socket secondPlayer;
@@ -23,7 +23,7 @@ public class OnlineGameBoard implements Runnable {
   private final int size;
 
 
-  public OnlineGameBoard(Socket firstPlayer, Socket secondPlayer, int size, int gameID) {
+  public OnlineBoardGame(Socket firstPlayer, Socket secondPlayer, int size, int gameID) {
     this.firstPlayer = firstPlayer;
     this.secondPlayer = secondPlayer;
     this.gameBoard = new int[size][size];
