@@ -42,10 +42,18 @@ public class Connection {
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(size));
 
         System.out.println("OK!");
-        OnlineGameBoard task = new OnlineGameBoard(socket, secondSocket, Integer.parseInt(size), gameID);
+        OnlineBoardGame task = new OnlineBoardGame(socket, secondSocket, Integer.parseInt(size), gameID);
         Thread t1 = new Thread(task);
         t1.start();
-      } else {
+      } else if (Objects.equals(receivedType, "BOT")) {
+        String size = MessageController.receiveMessage(socket);
+        int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(size));
+
+        BotBoardGame board = new BotBoardGame(Integer.parseInt(size), socket,in, gameID);
+        board.clientHandler();
+      }
+
+      else {
 
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
 
