@@ -10,7 +10,7 @@ public class DatabaseConnection {
 
   //change if needed
   private static final String username = "root";
-  private static final String password = "1234";
+  private static final String password = "qwerty";
   private static final String databaseName = "Go";
   private static final String connectionString = "jdbc:mysql://localhost/" + databaseName + "?user=" + username + "&password=" + password + "&useUnicode=true&characterEncoding=UTF-8";
 
