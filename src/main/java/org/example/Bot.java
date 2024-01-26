@@ -1,6 +1,7 @@
 package org.example;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -8,6 +9,7 @@ public class Bot {
 
   private int boardSize;
   private int[][] board;
+  private int[] prevMove = {0,0};
 
   public Bot(int boardSize, int[][] board) {
     this.boardSize = boardSize;
@@ -19,21 +21,25 @@ public class Bot {
   }
 
   public int[] makeMove() {
+
     // Prioritize capturing opponent stones
     int[] captureMove = prioritizeCapture();
-    if (captureMove != null) {
+    if (captureMove != null && !Arrays.equals(captureMove, prevMove)) {
+      prevMove = captureMove;
       return captureMove;
     }
 
     // If no capture move, prioritize defending own stones
     int[] defendMove = prioritizeDefense();
-    if (defendMove != null) {
+    if (defendMove != null && !Arrays.equals(defendMove, prevMove)) {
+      prevMove = defendMove;
       return defendMove;
     }
 
     // If no capturing or defending move, play near own stones
     int[] strategicMove = prioritizeStrategic();
-    if (strategicMove != null) {
+    if (strategicMove != null && !Arrays.equals(strategicMove, prevMove)) {
+      prevMove = strategicMove;
       return strategicMove;
     }
 

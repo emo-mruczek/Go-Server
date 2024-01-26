@@ -22,7 +22,6 @@ public class BotBoardGame {
   private int blackCaptures;  // Liczba przejętych kamieni przez czarnego gracza
   private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
   private int gameID;
-
   Bot bot;
 
   public BotBoardGame(int size, Socket socket, BufferedReader in, int gameID) {
@@ -80,19 +79,28 @@ public class BotBoardGame {
   }
 
   private void botMove() {
-    System.out.println(Arrays.deepToString(gameBoard));
-
     bot.setBoard(gameBoard);
     int[] botMove = bot.makeMove();
 
-    gameBoard[botMove[0]][botMove[1]] = 2;
+    makeMove(botMove[0], botMove[1], 2);
 
+    String botMoveStatus = MessageController.receiveMessage(socket);
+    switch (botMoveStatus) {
+      case "INSERT TRUE" -> sendBotMove(botMove);
+      case "INSERT FALSE" -> botMove();
+    }
+
+  }
+
+  private void sendBotMove(int[] botMove) {
     String rowChar = convertPosition(botMove[0]);
     String colChar = convertPosition(botMove[1]);
 
     String stringBotMove = (rowChar + colChar);
-    MessageController.sendMessage(stringBotMove, socket);
 
+    gameBoard[botMove[0]][botMove[1]] = 2;
+
+    MessageController.sendMessage(stringBotMove, socket);
   }
 
 
@@ -120,7 +128,7 @@ public class BotBoardGame {
       gameBoard[row][col] = color;
       MessageController.sendMessage("INSERT TRUE", socket);
       MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
-      // DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
+       DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
 
       if (color == 1) {
         blackCaptures++;
@@ -137,7 +145,7 @@ public class BotBoardGame {
         gameBoard[row][col] = color;
         MessageController.sendMessage("INSERT TRUE", socket);
         MyLogger.logger.log(Level.INFO, "Inserion ok: " + row + col);
-        // DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
+         DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
 
         if (color == 1) {
           blackStones++;
@@ -211,7 +219,7 @@ public class BotBoardGame {
       int capturedRow = getRow(position[0].charAt(0));
       int capturedCol = getCol(position[1].charAt(0));
       MessageController.sendMessage("DELETE " + capturedStone, socket);
-      // DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
+       DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
 
       gameBoard[capturedRow][capturedCol] = 0;
     }
@@ -289,6 +297,23 @@ public class BotBoardGame {
     } else {
       return String.valueOf((char) ('A' + pos - 10));
     }
+  }
+
+  private String prepareStatement(int color, int row, int col, String type) {
+
+    String player;
+    if (color == 1)
+      player = "BLACK";
+    else
+      player = "WHITE";
+
+    String rowChar = convertPosition(row);
+    String colChar = convertPosition(col);
+
+    String statement = player + "," + rowChar + "," + colChar + "," + type;
+    MyLogger.logger.log(Level.INFO, "Prepared statement: " + statement);
+
+    return statement;
   }
 
 }
