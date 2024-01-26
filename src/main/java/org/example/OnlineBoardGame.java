@@ -2,6 +2,7 @@ package org.example;
 
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -13,6 +14,12 @@ public class OnlineBoardGame implements Runnable {
   private Socket currPlayer;
   private Socket currOpponent;
 
+
+  private int gameBoard2[][];
+  private int gameBoard3[][];
+
+  private int ko = 0;
+
   private int blackStones;  // Liczba czarnych kamieni na planszy
   private int whiteStones;  // Liczba białych kamieni na planszy
   private int blackCaptures;  // Liczba przejętych kamieni przez czarnego gracza
@@ -21,14 +28,21 @@ public class OnlineBoardGame implements Runnable {
   private int gameBoard[][];
   private int gameID;
   private final int size;
+  private int score[];
 
 
   public OnlineBoardGame(Socket firstPlayer, Socket secondPlayer, int size, int gameID) {
     this.firstPlayer = firstPlayer;
     this.secondPlayer = secondPlayer;
-    this.gameBoard = new int[size][size];
     this.gameID = gameID;
     this.size = size;
+    this.gameBoard = new int[size][size];
+    this.gameBoard2 = new int[size][size];
+    this.gameBoard3 = new int[size][size];
+    this.blackStones = 0;
+    this.whiteStones = 0;
+    this.whiteCaptures = 0;
+    this.blackCaptures = 0;
 
     initializeBoard();
 
@@ -60,6 +74,7 @@ public class OnlineBoardGame implements Runnable {
   }
 
   private void makeMove(int row, int col, int color) {
+    ko = 0;
     if (gameBoard[row][col] != 0) {
       MessageController.sendMessage("INSERT FALSE", currPlayer);
       MyLogger.logger.log(Level.INFO, "Field is already occupied: " + row + col);
@@ -80,16 +95,11 @@ public class OnlineBoardGame implements Runnable {
       MessageController.sendMessage("INSERT TRUE", currOpponent);
       MessageController.sendMessage(row + String.valueOf(col) + color, currOpponent);
       MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
-         DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
-
-        if (color == 1) {
-           blackCaptures++;
-          whiteStones--;
-         } else {
-           whiteCaptures++;
-           blackStones--;
-       }
+      DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
     } else {
+      if (ko == 1) {
+        return;
+      }
       if (isSuicidalMove(row, col, color, tempBoard)) {
         MessageController.sendMessage("INSERT FALSE", currPlayer);
         String anotherMove = MessageController.receiveMessage(currPlayer);
@@ -102,15 +112,20 @@ public class OnlineBoardGame implements Runnable {
         MessageController.sendMessage("INSERT TRUE", currOpponent);
         MessageController.sendMessage(row + String.valueOf(col) + color, currOpponent);
         MyLogger.logger.log(Level.INFO, "Insertion ok: " + row + col);
-            DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
-
-             if (color == 1) {
-              blackStones++;
-            } else if (color == 2) {
-              whiteStones++;
-            }
+        DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
       }
     }
+    if (color == 1) {
+      blackStones++;
+    } else if (color == 2) {
+      whiteStones++;
+    }
+    MyLogger.logger.log(Level.INFO, "Liczba przejetych przez czarne " + blackCaptures);
+    MyLogger.logger.log(Level.INFO, "Liczba czarnych kamieni " + blackStones);
+    MyLogger.logger.log(Level.INFO, "Liczba przejetych przez białe " + whiteCaptures);
+    MyLogger.logger.log(Level.INFO, "Liczba białych kamieni " + whiteStones);
+    gameBoard3 = copyBoard(gameBoard2);
+    gameBoard2 = copyBoard(gameBoard);
   }
 
 
@@ -216,8 +231,17 @@ public class OnlineBoardGame implements Runnable {
 
       if (isValidPosition(newRow, newCol, board) && board[newRow][newCol] == opponentColor) {
         if (isGroupSurrounded(newRow, newCol, opponentColor, board)) {
-          captureStones(newRow, newCol, opponentColor, board);
-          return true;
+          if (captureStonesko(newRow, newCol, opponentColor, board)) {
+            captureStones(newRow, newCol, opponentColor, board);
+            return true;
+          } else {
+            MessageController.sendMessage("INSERT FALSE", currPlayer);
+            String anotherMove = MessageController.receiveMessage(currPlayer);
+            insertStone(anotherMove);
+            MyLogger.logger.log(Level.INFO, "Capturing move leads to previous state");
+            ko = 1;
+            return false;
+          }
         }
       }
     }
@@ -236,11 +260,39 @@ public class OnlineBoardGame implements Runnable {
 
       MessageController.sendMessage("DELETE " + capturedStone, currPlayer);
       MessageController.sendMessage("DELETE " + capturedStone, currOpponent);
-       DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
+      DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
+
+      if (color == 1) {
+        whiteCaptures++;
+        blackStones--;
+      } else {
+        blackCaptures++;
+        whiteStones--;
+      }
 
       gameBoard[capturedRow][capturedCol] = 0;
     }
   }
+
+  private boolean captureStonesko(int row, int col, int color, int[][] board) {
+    List<String> capturedStones = new ArrayList<>();
+    int[][] tempBoardko = copyBoard(board);
+    captureStonesDFS(row, col, color, board, new boolean[board.length][board[0].length], capturedStones);
+
+    for (String capturedStone : capturedStones) {
+      String[] position = capturedStone.split("");
+      int capturedRow = getRow(position[0].charAt(0));
+      int capturedCol = getCol(position[1].charAt(0));
+
+      tempBoardko[capturedRow][capturedCol] = 0;
+    }
+    if (Arrays.deepEquals(tempBoardko, gameBoard2) || Arrays.deepEquals(tempBoardko, gameBoard3)) {
+
+      return false;
+    }
+    return true;
+  }
+
 
   private void captureStonesDFS(int row, int col, int color, int[][] board, boolean[][] visited, List<String> capturedStones) {
     if (!isValidPosition(row, col, board) || visited[row][col]) {
