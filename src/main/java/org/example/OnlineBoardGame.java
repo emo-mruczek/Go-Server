@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 
 public class OnlineBoardGame implements Runnable {
@@ -29,6 +30,7 @@ public class OnlineBoardGame implements Runnable {
   private int gameID;
   private final int size;
   private int score[];
+  int passes = 0;
 
 
   public OnlineBoardGame(Socket firstPlayer, Socket secondPlayer, int size, int gameID) {
@@ -66,11 +68,47 @@ public class OnlineBoardGame implements Runnable {
   }
 
   private void insertStone(String value) {
+    if (Objects.equals(value, "PASS")) {
+      passes++;
+      if (passes > 1) {
+        endGame();
+        return;
+      } else {
+        MessageController.sendMessage("PASS " + "none", currOpponent);
+        MessageController.sendMessage("NO", currPlayer);
+        return;
+      }
+    }
+
+    passes = 0;
     int row = getRow(value.charAt(0));
     int col = getCol(value.charAt(1));
     int color = getColor(value.charAt(2));
 
     makeMove(row, col, color);
+  }
+
+  private void endGame() {
+    MessageController.sendMessage("YES", currPlayer);
+    MessageController.sendMessage("PASS " + "END", currOpponent);
+    MyLogger.logger.log(Level.INFO, "Gra się skończyła");
+    score = GameResultCalculator.calculateGameResult(gameBoard, whiteCaptures, blackCaptures, size);
+    MyLogger.logger.log(Level.INFO, "czarny punkty: " + score[0] + "\n");
+    MyLogger.logger.log(Level.INFO, "białe punkty: " + score[1] + "\n");
+    MyLogger.logger.log(Level.INFO, "kto wygrał: " + score[2]);
+    System.out.println(Arrays.deepToString(gameBoard));
+    MessageController.sendMessage(String.valueOf(score[2]), currPlayer);
+    MessageController.sendMessage(String.valueOf(score[2]), currOpponent);
+    String winner;
+    if (score[2] == 1) {
+      winner = "BLACK";
+    } else {
+      winner = "WHITE";
+    }
+
+    DatabaseConnection.saveWinner(winner, gameID);
+
+
   }
 
   private void makeMove(int row, int col, int color) {
@@ -120,10 +158,10 @@ public class OnlineBoardGame implements Runnable {
     } else if (color == 2) {
       whiteStones++;
     }
-    MyLogger.logger.log(Level.INFO, "Liczba przejetych przez czarne " + blackCaptures);
-    MyLogger.logger.log(Level.INFO, "Liczba czarnych kamieni " + blackStones);
-    MyLogger.logger.log(Level.INFO, "Liczba przejetych przez białe " + whiteCaptures);
-    MyLogger.logger.log(Level.INFO, "Liczba białych kamieni " + whiteStones);
+   // MyLogger.logger.log(Level.INFO, "Liczba przejetych przez czarne " + blackCaptures);
+  //  MyLogger.logger.log(Level.INFO, "Liczba czarnych kamieni " + blackStones);
+  //  MyLogger.logger.log(Level.INFO, "Liczba przejetych przez białe " + whiteCaptures);
+  //  MyLogger.logger.log(Level.INFO, "Liczba białych kamieni " + whiteStones);
     gameBoard3 = copyBoard(gameBoard2);
     gameBoard2 = copyBoard(gameBoard);
   }

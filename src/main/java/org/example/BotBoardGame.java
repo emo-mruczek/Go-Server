@@ -95,8 +95,17 @@ public class BotBoardGame {
       MyLogger.logger.log(Level.INFO, "kto wygrał: " + score[2]);
       MessageController.sendMessage("YES", socket);
       MessageController.sendMessage(String.valueOf(score[2]), socket);
+      String winner;
+      if (score[2] == 1) {
+        winner = "BLACK";
+      } else {
+        winner = "WHITE";
+      }
+
+      DatabaseConnection.saveWinner(winner, gameID);
     } else {
       MessageController.sendMessage("NO", socket);
+      botMove();
     }
   }
 
