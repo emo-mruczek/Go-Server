@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -15,23 +16,31 @@ public class BoardGame {
   private final BufferedReader in;
   private PrintWriter out;
   private int gameBoard[][];
+  private int gameBoard2[][];
+  private int gameBoard3[][];
+
+  private int ko = 0;
   private int blackStones;  // Liczba czarnych kamieni na planszy
   private int whiteStones;  // Liczba białych kamieni na planszy
-  private int blackCaptures;  // Liczba przejętych kamieni przez czarnego gracza
-  private int whiteCaptures;  // Liczba przejętych kamieni przez białego gracza
+  private int whiteCaptures;  // Liczba przejętych kamieni przez czarnego gracza
+  private int blackCaptures;  // Liczba przejętych kamieni przez białego gracza
   private int gameID;
+
+  private int score[];
 
   public BoardGame(int size, Socket socket, BufferedReader in, int gameID) {
     this.size = size;
     this.socket = socket;
     this.in = in;
     this.gameBoard = new int[size][size];
+    this.gameBoard2 = new int[size][size];
+    this.gameBoard3 = new int[size][size];
     this.gameID = gameID;
     initializeBoard();
     this.blackStones = 0;
     this.whiteStones = 0;
-    this.blackCaptures = 0;
     this.whiteCaptures = 0;
+    this.blackCaptures = 0;
   }
 
   private void initializeBoard() {
@@ -68,6 +77,25 @@ public class BoardGame {
     switch (name) {
       case "INSERT" -> insertStone(value);
       case "BYE" -> socket.close();
+      //TODO: clean-up
+      case "END" -> {
+        MyLogger.logger.log(Level.INFO, "Gra się skończyła");
+        score = GameResultCalculator.calculateGameResult(gameBoard, whiteCaptures, blackCaptures, size);
+          MyLogger.logger.log(Level.INFO, "czarny punkty: " + score[0] + "\n");
+          MyLogger.logger.log(Level.INFO, "białe punkty: " + score[1] + "\n");
+          MyLogger.logger.log(Level.INFO, "kto wygrał: " + score[2]);
+        System.out.println(Arrays.deepToString(gameBoard));
+        MessageController.sendMessage(String.valueOf(score[2]), socket);
+
+        String winner;
+        if (score[2] == 1) {
+          winner = "BLACK";
+        } else {
+          winner = "WHITE";
+        }
+
+        DatabaseConnection.saveWinner(winner, gameID);
+      }
     }
   }
 
@@ -80,6 +108,7 @@ public class BoardGame {
   }
 
   private void makeMove(int row, int col, int color) {
+    ko = 0;
     if (gameBoard[row][col] != 0) {
       MessageController.sendMessage("INSERT FALSE", socket);
       MyLogger.logger.log(Level.INFO, "Field is already occupied: " + row + col);
@@ -97,14 +126,10 @@ public class BoardGame {
       MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
       DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
 
-      if (color == 1) {
-        blackCaptures++;
-        whiteStones--;
-      } else {
-        whiteCaptures++;
-        blackStones--;
-      }
     } else {
+      if (ko == 1) {
+        return;
+      }
       if (isSuicidalMove(row, col, color, tempBoard)) {
         MessageController.sendMessage("INSERT FALSE", socket);
         MyLogger.logger.log(Level.INFO, "Suicidal move: " + row + col);
@@ -114,13 +139,19 @@ public class BoardGame {
         MyLogger.logger.log(Level.INFO, "Inserion ok: " + row + col);
         DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
 
-        if (color == 1) {
-          blackStones++;
-        } else if (color == 2) {
-          whiteStones++;
-        }
       }
     }
+    if (color == 1) {
+      blackStones++;
+    } else if (color == 2) {
+      whiteStones++;
+    }
+    MyLogger.logger.log(Level.INFO, "Liczba przejetych przez czarne " + blackCaptures);
+    MyLogger.logger.log(Level.INFO, "Liczba czarnych kamieni " + blackStones);
+    MyLogger.logger.log(Level.INFO, "Liczba przejetych przez białe " + whiteCaptures);
+    MyLogger.logger.log(Level.INFO, "Liczba białych kamieni " + whiteStones);
+    gameBoard3 = copyBoard(gameBoard2);
+    gameBoard2 = copyBoard(gameBoard);
   }
 
   private String prepareStatement(int color, int row, int col, String type) {
@@ -194,9 +225,18 @@ public class BoardGame {
 
       if (isValidPosition(newRow, newCol, board) && board[newRow][newCol] == opponentColor) {
         if (isGroupSurrounded(newRow, newCol, opponentColor, board)) {
-          captureStones(newRow, newCol, opponentColor, board);
-          return true;
+
+          if (captureStonesko(newRow, newCol, opponentColor, board)) {
+            captureStones(newRow, newCol, opponentColor, board);
+            return true;
+          } else {
+            MessageController.sendMessage("INSERT FALSE", socket);
+            MyLogger.logger.log(Level.INFO, "Capturing move leads to previous state");
+            ko = 1;
+            return false;
+          }
         }
+
       }
     }
 
@@ -212,14 +252,36 @@ public class BoardGame {
       int capturedRow = getRow(position[0].charAt(0));
       int capturedCol = getCol(position[1].charAt(0));
       MessageController.sendMessage("DELETE " + capturedStone, socket);
+      if (color == 1) {
+        whiteCaptures++;
+        blackStones--;
+      } else {
+        blackCaptures++;
+        whiteStones--;
+      }
       DatabaseConnection.saveMove(prepareStatement(color, capturedRow, capturedCol, "DELETION"), gameID);
 
       gameBoard[capturedRow][capturedCol] = 0;
     }
+  }
 
-    //for (String capturedStone : capturedStones) {
-   //
-    //}
+  private boolean captureStonesko(int row, int col, int color, int[][] board) {
+    List<String> capturedStones = new ArrayList<>();
+    int[][] tempBoardko = copyBoard(board);
+    captureStonesDFS(row, col, color, board, new boolean[board.length][board[0].length], capturedStones);
+
+    for (String capturedStone : capturedStones) {
+      String[] position = capturedStone.split("");
+      int capturedRow = getRow(position[0].charAt(0));
+      int capturedCol = getCol(position[1].charAt(0));
+
+      tempBoardko[capturedRow][capturedCol] = 0;
+    }
+    if (Arrays.deepEquals(tempBoardko, gameBoard2) || Arrays.deepEquals(tempBoardko, gameBoard3)) {
+
+      return false;
+    }
+    return true;
   }
 
   private void captureStonesDFS(int row, int col, int color, int[][] board, boolean[][] visited, List<String> capturedStones) {
