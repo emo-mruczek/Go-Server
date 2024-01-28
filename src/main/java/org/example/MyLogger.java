@@ -14,7 +14,6 @@ public class MyLogger {
     ConsoleHandler ch = new ConsoleHandler();
     ch.setLevel(Level.INFO);
     logger.addHandler(ch);
-
     logger.setLevel(Level.OFF);
   }
 }
