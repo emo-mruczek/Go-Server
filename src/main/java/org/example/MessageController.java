@@ -29,11 +29,10 @@ public class MessageController {
     public static String receiveMessage(Socket socket) {
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            return in.readLine(); // Odczytaj odpowiedź od serwera
+            return in.readLine();
         } catch (IOException e) {
-            System.out.println("Błąd podczas odbierania wiadomości: " + e.getMessage());
-            return null; // Możesz obsłużyć ten błąd w odpowiedni sposób
+            System.out.println("Error while receiving a message: " + e.getMessage());
+            return null;
         }
     }
-
 }

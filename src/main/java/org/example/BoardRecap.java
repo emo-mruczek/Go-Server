@@ -7,10 +7,9 @@ public class BoardRecap {
   public BoardRecap(Socket socket) {
     String gamesList = DatabaseConnection.retrieveGames();
     MessageController.sendMessage(gamesList, socket);
-
     String gameID = MessageController.receiveMessage(socket);
+    assert gameID != null;
     String movesList = DatabaseConnection.retrieveMoves(Integer.parseInt(gameID));
     MessageController.sendMessage(movesList, socket);
-
   }
 }

@@ -1,9 +1,6 @@
 package org.example;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.SQLException;
@@ -22,42 +19,37 @@ public class Connection {
 
   private void run() {
     try {
-      InputStream input = socket.getInputStream();
-      BufferedReader in = new BufferedReader(new InputStreamReader(input));
-      String receivedType = in.readLine();
-
+      String receivedType = MessageController.receiveMessage(socket);
       MyLogger.logger.log(Level.INFO, "I've received " + receivedType);
-
       if (Objects.equals(receivedType, "RECAP")) {
         BoardRecap board = new BoardRecap(socket);
+
       } else if (Objects.equals(receivedType, "ONLINE")) {
         MessageController.sendMessage("FIRST", socket);
         String size = MessageController.receiveMessage(socket);
-
         Socket secondSocket = serverSocket.accept();
         System.out.println(MessageController.receiveMessage(secondSocket));
         MessageController.sendMessage("SECOND", secondSocket);
         MessageController.sendMessage(size, secondSocket);
-
+        assert size != null;
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(size));
-
         System.out.println("OK!");
         OnlineBoardGame task = new OnlineBoardGame(socket, secondSocket, Integer.parseInt(size), gameID);
         Thread t1 = new Thread(task);
         t1.start();
+
       } else if (Objects.equals(receivedType, "BOT")) {
         String size = MessageController.receiveMessage(socket);
+        assert size != null;
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(size));
-
-        BotBoardGame board = new BotBoardGame(Integer.parseInt(size), socket,in, gameID);
+        BotBoardGame board = new BotBoardGame(Integer.parseInt(size), socket, gameID);
         board.clientHandler();
       }
 
       else {
-
+        assert receivedType != null;
         int gameID = DatabaseConnection.saveNewGame(Integer.parseInt(receivedType));
-
-        BoardGame board = new BoardGame(Integer.parseInt(receivedType), socket, in, gameID);
+        HotseatBoardGame board = new HotseatBoardGame(Integer.parseInt(receivedType), socket, gameID);
         board.clientHandler();
       }
     } catch (IOException ex) {
