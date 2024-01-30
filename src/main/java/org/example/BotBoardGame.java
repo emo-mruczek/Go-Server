@@ -29,29 +29,34 @@ public class BotBoardGame extends BoardGame{
       }
       case "BYE" -> socket.close();
       case "PASS" -> shouldGameFinished();
+      case "FORFEIT" -> endGame();
     }
   }
 
   private void shouldGameFinished() {
     if(getRandomBoolean()) {
-      MyLogger.logger.log(Level.INFO, "Gra się skończyła");
-      score = GameResultCalculator.calculateGameResult(gameBoard, whiteCaptures, blackCaptures, size);
-      MyLogger.logger.log(Level.INFO, "czarny punkty: " + score[0] + "\n");
-      MyLogger.logger.log(Level.INFO, "białe punkty: " + score[1] + "\n");
-      MyLogger.logger.log(Level.INFO, "kto wygrał: " + score[2]);
-      MessageController.sendMessage("YES", socket);
-      MessageController.sendMessage(String.valueOf(score[2]), socket);
-      String winner;
-      if (score[2] == 1) {
-        winner = "BLACK";
-      } else {
-        winner = "WHITE";
-      }
-      DatabaseConnection.saveWinner(winner, gameID);
+      endGame();
     } else {
       MessageController.sendMessage("NO", socket);
       botMove();
     }
+  }
+
+  private void endGame() {
+    MyLogger.logger.log(Level.INFO, "Gra się skończyła");
+    score = GameResultCalculator.calculateGameResult(gameBoard, whiteCaptures, blackCaptures, size);
+    MyLogger.logger.log(Level.INFO, "czarny punkty: " + score[0] + "\n");
+    MyLogger.logger.log(Level.INFO, "białe punkty: " + score[1] + "\n");
+    MyLogger.logger.log(Level.INFO, "kto wygrał: " + score[2]);
+    MessageController.sendMessage("YES", socket);
+    MessageController.sendMessage(String.valueOf(score[2]), socket);
+    String winner;
+    if (score[2] == 1) {
+      winner = "BLACK";
+    } else {
+      winner = "WHITE";
+    }
+    DatabaseConnection.saveWinner(winner, gameID);
   }
 
   public static boolean getRandomBoolean() {
