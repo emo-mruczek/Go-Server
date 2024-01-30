@@ -37,7 +37,6 @@ public class OnlineBoardGame extends BoardGame implements Runnable {
           System.out.println("Socket has closed!");
           return;
         } else if (Objects.equals(fromFirst, "FORFEIT")) {
-          System.out.println("DUPA");
           endGame();
           return;
         }
