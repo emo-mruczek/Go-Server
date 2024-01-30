@@ -36,6 +36,9 @@ public class OnlineBoardGame extends BoardGame implements Runnable {
           currOpponent.close();
           System.out.println("Socket has closed!");
           return;
+        } else if (Objects.equals(fromFirst, "FORFEIT")) {
+          endGame();
+          return;
         }
         insertStone(fromFirst);
 
@@ -47,6 +50,9 @@ public class OnlineBoardGame extends BoardGame implements Runnable {
           currOpponent.close();
           System.out.println("Socket has closed!");
           return;
+        } else if (Objects.equals(fromSecond, "FORFEIT")) {
+          System.out.println("DUPA");
+          endGame();
         }
         insertStone(fromSecond);
       } catch (IOException e) {
@@ -115,9 +121,9 @@ public class OnlineBoardGame extends BoardGame implements Runnable {
 
       gameBoard[row][col] = color;
       MessageController.sendMessage("INSERT TRUE", currPlayer);
-      MessageController.sendMessage(row + String.valueOf(col) + color, currPlayer);
+      MessageController.sendMessage(Converter.convertPosition(row) + String.valueOf(Converter.convertPosition(col)) + color, currPlayer);
       MessageController.sendMessage("INSERT TRUE", currOpponent);
-      MessageController.sendMessage(row + String.valueOf(col) + color, currOpponent);
+      MessageController.sendMessage(Converter.convertPosition(row) + String.valueOf(Converter.convertPosition(col)) + color, currOpponent);
       MyLogger.logger.log(Level.INFO, "Stone captured opponent's stone");
       DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
     } else {
@@ -132,9 +138,9 @@ public class OnlineBoardGame extends BoardGame implements Runnable {
       } else {
         gameBoard[row][col] = color;
         MessageController.sendMessage("INSERT TRUE", currPlayer);
-        MessageController.sendMessage(row + String.valueOf(col) + color, currPlayer);
+        MessageController.sendMessage(Converter.convertPosition(row) + String.valueOf(Converter.convertPosition(col)) + color, currPlayer);
         MessageController.sendMessage("INSERT TRUE", currOpponent);
-        MessageController.sendMessage(row + String.valueOf(col) + color, currOpponent);
+        MessageController.sendMessage(Converter.convertPosition(row) + String.valueOf(Converter.convertPosition(col)) + color, currOpponent);
         MyLogger.logger.log(Level.INFO, "Insertion ok: " + row + col);
         DatabaseConnection.saveMove(prepareStatement(color, row, col, "INSERTION"), gameID);
       }
