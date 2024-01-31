@@ -2,6 +2,7 @@ package org.example;
 
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.logging.Level;
 
 public class HotseatBoardGame extends BoardGame {
@@ -29,6 +30,16 @@ public class HotseatBoardGame extends BoardGame {
         MessageController.sendMessage(String.valueOf(score[2]), socket);
         String winner;
         if (score[2] == 1) {
+          winner = "BLACK";
+        } else {
+          winner = "WHITE";
+        }
+        DatabaseConnection.saveWinner(winner, gameID);
+      }
+      case "FORFEIT" -> {
+        MyLogger.logger.log(Level.INFO, "Gracz przyznał się do przegranej!");
+        String winner;
+        if (Objects.equals(value, "2")) {
           winner = "BLACK";
         } else {
           winner = "WHITE";

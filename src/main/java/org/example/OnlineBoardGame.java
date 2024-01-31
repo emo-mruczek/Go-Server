@@ -37,7 +37,7 @@ public class OnlineBoardGame extends BoardGame implements Runnable {
           System.out.println("Socket has closed!");
           return;
         } else if (Objects.equals(fromFirst, "FORFEIT")) {
-          endGame();
+          forfeit();
           return;
         }
         insertStone(fromFirst);
@@ -51,14 +51,25 @@ public class OnlineBoardGame extends BoardGame implements Runnable {
           System.out.println("Socket has closed!");
           return;
         } else if (Objects.equals(fromSecond, "FORFEIT")) {
-          System.out.println("DUPA");
-          endGame();
+          forfeit();
+          return;
         }
         insertStone(fromSecond);
       } catch (IOException e) {
         System.out.println("Socket closed");
       }
     }
+  }
+
+  private void forfeit() {
+    String winner = MessageController.receiveMessage(currPlayer);
+    if (Objects.equals(winner, "FIRST")) {
+      winner = "WHITE";
+    } else {
+      winner = "BLACK";
+    }
+    MessageController.sendMessage("FORFEIT " + "none", currOpponent);
+    DatabaseConnection.saveWinner(winner, gameID);
   }
 
   @Override

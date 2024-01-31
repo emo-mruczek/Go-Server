@@ -29,7 +29,7 @@ public class BotBoardGame extends BoardGame{
       }
       case "BYE" -> socket.close();
       case "PASS" -> shouldGameFinished();
-      case "FORFEIT" -> endGame();
+      case "FORFEIT" -> DatabaseConnection.saveWinner("WHITE", gameID);
     }
   }
 
